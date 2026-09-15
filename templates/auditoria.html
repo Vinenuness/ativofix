@@ -3,27 +3,27 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Auditoria - AtivoFix</title>
-<link rel="icon" href="/static/logo-icon.png" />
+<link rel="icon" href="/static/favicon.png" />
 <style>
-body{font-family:Arial;background:#0f172a;color:#e2e8f0;margin:0;padding:20px}
+body{font-family:Arial;background:#1b2024;color:#e4e8ea;margin:0;padding:20px}
 h1{margin:0;font-size:20px}
 .top{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:14px}
 .left{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-.small{font-size:12px;color:#94a3b8}
-table{width:100%;border-collapse:collapse;background:#1e293b;border-radius:12px;overflow:hidden;font-size:13px}
-th,td{padding:9px 12px;text-align:left;border-bottom:1px solid #334155;vertical-align:top}
-th{background:#0b1220;color:#94a3b8;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
-tr:hover{background:#22324a}
-.method{display:inline-block;border-radius:6px;padding:1px 7px;font-weight:bold;font-size:11px;background:#1e3a8a;color:#93c5fd}
+.small{font-size:12px;color:#a5adb3}
+table{width:100%;border-collapse:collapse;background:#232a30;border-radius:12px;overflow:hidden;font-size:13px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid #313a41;vertical-align:top}
+th{background:#12161a;color:#a5adb3;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+tr:hover{background:#262e34}
+.method{display:inline-block;border-radius:6px;padding:1px 7px;font-weight:bold;font-size:11px;background:#134e4a;color:#5eead4}
 .method.delete,.method.post{background:#450a0a;color:#fca5a5}
-a{color:#e2e8f0;text-decoration:none}
-.badge{display:inline-block;background:#0b1220;border:1px solid #334155;border-radius:999px;padding:1px 8px;font-size:11px;margin:1px}
-.empty{padding:24px;text-align:center;color:#94a3b8}
+a{color:#e4e8ea;text-decoration:none}
+.badge{display:inline-block;background:#12161a;border:1px solid #313a41;border-radius:999px;padding:1px 8px;font-size:11px;margin:1px}
+.empty{padding:24px;text-align:center;color:#a5adb3}
 .err{color:#fca5a5}
 </style></head><body>
 <div class=top>
   <div class=left><a href=/>Voltar</a><h1>Auditoria</h1><div class=small id=count></div></div>
-  <div class=small><button class=refresh onclick=load() style="background:#2563eb;color:#fff;border:0;border-radius:8px;padding:8px 14px;cursor:pointer">Atualizar</button></div>
+  <div class=small><button class=refresh onclick=load() style="background:#0d9488;color:#fff;border:0;border-radius:8px;padding:8px 14px;cursor:pointer">Atualizar</button></div>
 </div>
 <div id=wrap><table><thead><tr><th>Quando</th><th>Quem</th><th>Acao</th><th>Detalhe</th></tr></thead><tbody id=rows></tbody></table></div>
 <script>
@@ -43,7 +43,7 @@ async function load(){
       var path=(x.action||"").split(" ").slice(1).join(" ");
       var methodCls=(m==="DELETE"||m==="POST")?"method delete":"method";
       var who=x.username||"-"; if(x.user_id)who+=" <span class='badge'>#" + x.user_id + "</span>";
-      return "<tr><td style=white-space:nowrap>"+fmt(x.created_at)+"</td><td style=white-space:nowrap>"+esc(who)+"</td><td><span class='"+methodCls+"'>"+esc(m)+"</span> <span style=color:#7dd3fc>"+esc(path)+"</span></td><td style=word-break:break-word>"+esc(x.detail||"")+"</td></tr>";
+      return "<tr><td style=white-space:nowrap>"+fmt(x.created_at)+"</td><td style=white-space:nowrap>"+esc(who)+"</td><td><span class='"+methodCls+"'>"+esc(m)+"</span> <span style=color:#5eead4>"+esc(path)+"</span></td><td style=word-break:break-word>"+esc(x.detail||"")+"</td></tr>";
     }).join("");
   }catch(e){wrap.innerHTML="<tr><td colspan=4 class='empty err'>Erro ao carregar: "+esc(e.message)+"</td></tr>";}
 }

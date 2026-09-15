@@ -2,41 +2,41 @@
 <html><head>
 <meta charset="UTF-8" />
 <title>Dashboard - AtivoFix</title>
-<link rel="icon" href="/static/logo-icon.png" />
+<link rel="icon" href="/static/favicon.png" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
-body{font-family:Arial;background:#0f172a;color:#e2e8f0;margin:0;padding:20px}
+body{font-family:Arial;background:#1b2024;color:#e4e8ea;margin:0;padding:20px}
 h1{margin:0}
 .top{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:20px}
 .left{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-a{color:#e2e8f0;text-decoration:none}
-.btn{border:1px solid #334155;background:#0b1220;color:#e2e8f0;padding:8px 14px;border-radius:10px;cursor:pointer;font-size:13px}
-.btn:hover{background:#0f1a2e}
-.btn-primary{background:#2563eb;border-color:#2563eb}
-.btn-primary:hover{background:#1d4ed8}
-.small{font-size:12px;color:#94a3b8}
+a{color:#e4e8ea;text-decoration:none}
+.btn{border:1px solid #313a41;background:#12161a;color:#e4e8ea;padding:8px 14px;border-radius:10px;cursor:pointer;font-size:13px}
+.btn:hover{background:#1c2226}
+.btn-primary{background:#0d9488;border-color:#0d9488}
+.btn-primary:hover{background:#0f766e}
+.small{font-size:12px;color:#a5adb3}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:24px}
-.card{background:#1e293b;border:1px solid #334155;border-radius:14px;padding:18px}
-.card-label{font-size:13px;color:#94a3b8;margin-bottom:6px}
+.card{background:#232a30;border:1px solid #313a41;border-radius:14px;padding:18px}
+.card-label{font-size:13px;color:#a5adb3;margin-bottom:6px}
 .card-value{font-size:32px;font-weight:800;color:#fff}
 .card-value.green{color:#22c55e}
-.card-value.blue{color:#3b82f6}
+.card-value.blue{color:#14b8a6}
 .card-value.yellow{color:#f59e0b}
-.card-value.purple{color:#a855f7}
+.card-value.purple{color:#14b8a6}
 .charts{display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:14px;margin-bottom:24px}
-.chart-box{background:#1e293b;border:1px solid #334155;border-radius:14px;padding:18px}
+.chart-box{background:#232a30;border:1px solid #313a41;border-radius:14px;padding:18px}
 .chart-title{font-weight:700;margin-bottom:12px;font-size:15px}
 .section-title{font-weight:700;font-size:18px;margin-bottom:12px;color:#fff}
 table{width:100%;border-collapse:collapse}
-th{text-align:left;padding:10px 12px;border-bottom:2px solid #334155;color:#94a3b8;font-size:13px}
-td{padding:10px 12px;border-bottom:1px solid #1e293b;font-size:13px}
+th{text-align:left;padding:10px 12px;border-bottom:2px solid #313a41;color:#a5adb3;font-size:13px}
+td{padding:10px 12px;border-bottom:1px solid #232a30;font-size:13px}
 .badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600}
 .badge-done{background:#052e16;color:#22c55e}
-.badge-queued{background:#1e1b4b;color:#818cf8}
-.badge-running{background:#172554;color:#60a5fa}
+.badge-queued{background:#1e1b4b;color:#2dd4bf}
+.badge-running{background:#172554;color:#2dd4bf}
 .badge-failed{background:#450a0a;color:#f87171}
 .export-bar{display:flex;gap:10px;align-items:center;margin-bottom:16px}
-.export-bar select{padding:8px 12px;border-radius:10px;border:1px solid #334155;background:#0b1220;color:#e2e8f0}
+.export-bar select{padding:8px 12px;border-radius:10px;border:1px solid #313a41;background:#12161a;color:#e4e8ea}
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
@@ -101,7 +101,7 @@ td{padding:10px 12px;border-bottom:1px solid #1e293b;font-size:13px}
 
 <script>
 var chartInstances={};
-var colors=["#3b82f6","#22c55e","#f59e0b","#ef4444","#a855f7","#06b6d4","#f97316","#ec4899"];
+var colors=["#14b8a6","#22c55e","#f59e0b","#ef4444","#14b8a6","#06b6d4","#f97316","#ec4899"];
 
 async function loadDashboard() {
   var res=await fetch("/api/dashboard");
@@ -128,15 +128,15 @@ async function loadDashboard() {
   if(chartInstances.metric) chartInstances.metric.destroy();
   chartInstances.metric=new Chart(document.getElementById("metricChart"),{
     type:"bar",
-    data:{labels:["CPU Media","RAM Media"],datasets:[{label:"%",data:[d.cpu_average,d.ram_average],backgroundColor:["#3b82f6","#22c55e"],borderRadius:8,barThickness:60}]},
-    options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:100,ticks:{color:"#94a3b8"},grid:{color:"#1e293b"}},x:{ticks:{color:"#94a3b8"},grid:{display:false}}}}
+    data:{labels:["CPU Media","RAM Media"],datasets:[{label:"%",data:[d.cpu_average,d.ram_average],backgroundColor:["#14b8a6","#22c55e"],borderRadius:8,barThickness:60}]},
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:100,ticks:{color:"#a5adb3"},grid:{color:"#232a30"}},x:{ticks:{color:"#a5adb3"},grid:{display:false}}}}
   });
 
   if(chartInstances.unit) chartInstances.unit.destroy();
   chartInstances.unit=new Chart(document.getElementById("unitChart"),{
     type:"doughnut",
     data:{labels:d.computers_per_unit.map(function(u){return u.unit}),datasets:[{data:d.computers_per_unit.map(function(u){return u.count}),backgroundColor:colors.slice(0,d.computers_per_unit.length)}]},
-    options:{responsive:true,plugins:{legend:{position:"bottom",labels:{color:"#e2e8f0",padding:12}}}}
+    options:{responsive:true,plugins:{legend:{position:"bottom",labels:{color:"#e4e8ea",padding:12}}}}
   });
 
   var osLabels=Object.keys(d.os_distribution);
@@ -146,7 +146,7 @@ async function loadDashboard() {
     chartInstances.os=new Chart(document.getElementById("osChart"),{
       type:"doughnut",
       data:{labels:osLabels,datasets:[{data:osData,backgroundColor:colors.slice(0,osLabels.length)}]},
-      options:{responsive:true,plugins:{legend:{position:"bottom",labels:{color:"#e2e8f0",padding:12}}}}
+      options:{responsive:true,plugins:{legend:{position:"bottom",labels:{color:"#e4e8ea",padding:12}}}}
     });
   }
 
@@ -158,7 +158,7 @@ async function loadDashboard() {
     chartInstances.disk=new Chart(document.getElementById("diskChart"),{
       type:"doughnut",
       data:{labels:["Usado ("+diskUsed+" GB)","Livre ("+diskFree+" GB)"],datasets:[{data:[diskUsed,diskFree],backgroundColor:["#ef4444","#22c55e"]}]},
-      options:{responsive:true,plugins:{legend:{position:"bottom",labels:{color:"#e2e8f0",padding:12}}}}
+      options:{responsive:true,plugins:{legend:{position:"bottom",labels:{color:"#e4e8ea",padding:12}}}}
     });
   }
 
