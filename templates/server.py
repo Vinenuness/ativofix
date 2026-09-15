@@ -20,6 +20,9 @@ import bcrypt
 # CONFIGURAÇÃO VIA VARIÁVEIS DE AMBIENTE
 # ================================
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
+ATTACH_DIR = os.path.join(APP_DIR, "attachments")
+ALLOWED_ATT_EXT = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".pdf", ".txt", ".zip", ".docx", ".xlsx", ".csv", ".mp4", ".mov"}
+MAX_ATT_SIZE = 15 * 1024 * 1024  # 15MB por arquivo
 DB_PATH = os.environ.get("DB_PATH", os.path.join(APP_DIR, "db.sqlite3"))
 DB_BACKUP_DIR = os.environ.get("DB_BACKUP_DIR", os.path.join(APP_DIR, "backups"))
 
@@ -276,6 +279,18 @@ def init_db():
             );
             CREATE INDEX IF NOT EXISTS idx_tickets_tenant ON tickets(tenant_id);
             CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status);
+            CREATE TABLE IF NOT EXISTS ticket_attachments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ticket_id INTEGER NOT NULL,
+                filename TEXT NOT NULL,
+                stored_name TEXT NOT NULL,
+                mime TEXT,
+                size INTEGER,
+                uploaded_by TEXT,
+                uploaded_at TEXT,
+                FOREIGN KEY (ticket_id) REFERENCES tickets(ticket_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_att_ticket ON ticket_attachments(ticket_id);
             CREATE TABLE IF NOT EXISTS ticket_history (
                 history_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 ticket_id INTEGER NOT NULL,
@@ -2960,7 +2975,7 @@ def api_tickets_report_pdf():
         pdf.cell(20, 7, (r["created_at"] or "")[:10], 1, 0, "C", True)
         pdf.ln()
         fill = not fill
-    output = pdf.output()
+    output = bytes(pdf.output())
     return Response(output, mimetype="application/pdf", headers={"Content-Disposition": "attachment; filename=relatorio_chamados.pdf"})
 
 # ================================
@@ -3236,6 +3251,15 @@ def api_ticket_track():
             'rating_comment': r['rating_comment'] if 'rating_comment' in r.keys() else None,
             'sla_due': r['sla_due'] if 'sla_due' in r.keys() else None
         })
+    with get_db() as conn:
+        for t in tickets:
+            atts = conn.execute(
+                "SELECT id, filename, size FROM ticket_attachments WHERE ticket_id = ? ORDER BY id",
+                (t["ticket_id"],)).fetchall()
+            t["attachments"] = [{
+                "id": a["id"], "filename": a["filename"], "size": a["size"],
+                "url": "/api/attachments/track/%d/%d?k=%s" % (t["ticket_id"], a["id"], _track_att_key(t["ticket_id"], a["id"]))
+            } for a in atts]
     return jsonify({"tickets": tickets, "email": email})
 
 
@@ -3270,10 +3294,13 @@ def api_ticket_public():
             conn.execute("UPDATE tickets SET unit_id = ?, location_id = ? WHERE ticket_id = ?",
                 (unit_id, location_id, ticket_id))
         conn.commit()
+    import time as _time
+    _tok = uuid.uuid4().hex
+    PUB_TOKENS[_tok] = {"ticket_id": ticket_id, "expires": _time.time() + 1800}
     notify_ticket_event(ticket_id, f"Novo chamado #{ticket_id}: {title}", "Um novo chamado foi aberto no portal.", link=f"/chamados")
     email = data.get("email") or (created_by.split("(")[1].rstrip(")") if "(" in created_by else None)
     notify_ticket_created(ticket_id, title, created_by, email)
-    return jsonify({"ok": True, "ticket_id": ticket_id})
+    return jsonify({"ok": True, "ticket_id": ticket_id, "upload_token": _tok})
 
 @app.route("/abrir-chamado")
 def abrir_chamado_page():
@@ -3318,6 +3345,199 @@ def abrir_chamado_js():
 # ================================
 # FEATURE: NOTIFICAÇÕES IN-APP
 # ================================
+
+# ================================
+# FEATURE: ANEXOS DE CHAMADOS
+# ================================
+def _safe_att_name(name):
+    """Sanitiza o nome original do arquivo."""
+    name = os.path.basename(name or "")
+    name = re.sub(r"[^A-Za-z0-9._\- ]", "_", name).strip() or "arquivo"
+    return name[:120]
+
+
+def _save_attachment(conn, ticket_id, file_storage, uploaded_by):
+    """Valida e grava um arquivo; retorna (id, None) ou (None, erro)."""
+    fname = _safe_att_name(file_storage.filename)
+    ext = os.path.splitext(fname)[1].lower()
+    if ext not in ALLOWED_ATT_EXT:
+        return None, "Extensao nao permitida: %s" % (ext or "(sem)")
+    data = file_storage.read()
+    if len(data) == 0:
+        return None, "Arquivo vazio"
+    if len(data) > MAX_ATT_SIZE:
+        return None, "Arquivo maior que 15MB: %s" % fname
+    tdir = os.path.join(ATTACH_DIR, str(ticket_id))
+    os.makedirs(tdir, exist_ok=True)
+    stored = uuid.uuid4().hex + ext
+    with open(os.path.join(tdir, stored), "wb") as fh:
+        fh.write(data)
+    mime = file_storage.mimetype or "application/octet-stream"
+    conn.execute(
+        "INSERT INTO ticket_attachments (ticket_id, filename, stored_name, mime, size, uploaded_by, uploaded_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (ticket_id, fname, stored, mime, len(data), uploaded_by, utc_now_iso()))
+    att_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    return att_id, None
+
+
+def _ticket_attachments(conn, ticket_id):
+    rows = conn.execute(
+        "SELECT id, filename, mime, size, uploaded_by, uploaded_at FROM ticket_attachments WHERE ticket_id = ? ORDER BY id",
+        (ticket_id,)).fetchall()
+    return [dict(r) for r in rows]
+
+
+@app.route("/api/tickets/<int:ticket_id>/attachments", methods=["POST"])
+@require_login
+def api_ticket_att_upload(ticket_id):
+    if not ticket_in_scope(ticket_id):
+        return jsonify({"error": "sem acesso a este chamado"}), 403
+    files = request.files.getlist("files") or ([request.files.get("file")] if request.files.get("file") else [])
+    if not files:
+        return jsonify({"error": "nenhum arquivo enviado"}), 400
+    user = session.get("user", "sistema")
+    saved, errors = [], []
+    with get_db() as conn:
+        for f in files:
+            if f is None:
+                continue
+            att_id, err = _save_attachment(conn, ticket_id, f, user)
+            if err:
+                errors.append(err)
+            else:
+                saved.append(att_id)
+        conn.commit()
+    if not saved and errors:
+        return jsonify({"error": "; ".join(errors)}), 400
+    return jsonify({"ok": True, "saved": saved, "errors": errors})
+
+
+@app.route("/api/tickets/<int:ticket_id>/attachments", methods=["GET"])
+@require_login
+def api_ticket_att_list(ticket_id):
+    if not ticket_in_scope(ticket_id):
+        return jsonify({"error": "sem acesso a este chamado"}), 403
+    with get_db() as conn:
+        return jsonify(_ticket_attachments(conn, ticket_id))
+
+
+@app.route("/api/attachments/<int:att_id>", methods=["GET"])
+@require_login
+def api_att_download(att_id):
+    with get_db() as conn:
+        row = conn.execute("SELECT * FROM ticket_attachments WHERE id = ?", (att_id,)).fetchone()
+    if not row:
+        return jsonify({"error": "anexo nao encontrado"}), 404
+    if not ticket_in_scope(row["ticket_id"]):
+        return jsonify({"error": "sem acesso a este chamado"}), 403
+    path = os.path.join(ATTACH_DIR, str(row["ticket_id"]), row["stored_name"])
+    if not os.path.isfile(path):
+        return jsonify({"error": "arquivo perdido"}), 404
+    return send_file(path, mimetype=row["mime"] or "application/octet-stream",
+                     as_attachment=True, download_name=row["filename"])
+
+
+@app.route("/api/attachments/<int:att_id>", methods=["DELETE"])
+@require_login
+def api_att_delete(att_id):
+    with get_db() as conn:
+        row = conn.execute("SELECT * FROM ticket_attachments WHERE id = ?", (att_id,)).fetchone()
+        if not row:
+            return jsonify({"error": "anexo nao encontrado"}), 404
+        if not ticket_in_scope(row["ticket_id"]):
+            return jsonify({"error": "sem acesso a este chamado"}), 403
+        path = os.path.join(ATTACH_DIR, str(row["ticket_id"]), row["stored_name"])
+        if os.path.isfile(path):
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+        conn.execute("DELETE FROM ticket_attachments WHERE id = ?", (att_id,))
+        conn.commit()
+    return jsonify({"ok": True})
+
+
+# ------- download de anexo via link assinado (rastreio publico por e-mail) -------
+def _track_att_key(ticket_id, att_id):
+    import hashlib, hmac as _hmac
+    msg = ("%d:%d" % (ticket_id, att_id)).encode()
+    return _hmac.new(FLASK_SECRET_KEY.encode(), msg, hashlib.sha256).hexdigest()[:16]
+
+
+@app.route("/api/attachments/track/<int:ticket_id>/<int:att_id>")
+def api_att_track_download(ticket_id, att_id):
+    k = request.args.get("k", "")
+    if not k or k != _track_att_key(ticket_id, att_id):
+        return jsonify({"error": "link invalido"}), 403
+    with get_db() as conn:
+        row = conn.execute("SELECT * FROM ticket_attachments WHERE id = ? AND ticket_id = ?", (att_id, ticket_id)).fetchone()
+    if not row:
+        return jsonify({"error": "anexo nao encontrado"}), 404
+    path = os.path.join(ATTACH_DIR, str(row["ticket_id"]), row["stored_name"])
+    if not os.path.isfile(path):
+        return jsonify({"error": "arquivo perdido"}), 404
+    return send_file(path, mimetype=row["mime"] or "application/octet-stream",
+                     as_attachment=True, download_name=row["filename"])
+
+
+# ------- portal publico: janela de upload com token de uso unico -------
+PUB_TOKENS = {}  # token -> {ticket_id, expires}
+
+
+@app.route("/api/public/attachments/<token>", methods=["POST"])
+def api_public_att_upload(token):
+    info = PUB_TOKENS.get(token)
+    if not info or info["expires"] < datetime.now(timezone.utc).timestamp():
+        PUB_TOKENS.pop(token, None)
+        return jsonify({"error": "janela de upload expirada"}), 403
+    files = request.files.getlist("files") or ([request.files.get("file")] if request.files.get("file") else [])
+    if not files:
+        return jsonify({"error": "nenhum arquivo enviado"}), 400
+    saved, errors = [], []
+    with get_db() as conn:
+        for f in files:
+            if f is None:
+                continue
+            att_id, err = _save_attachment(conn, info["ticket_id"], f, "portal")
+            if err:
+                errors.append(err)
+            else:
+                saved.append(att_id)
+        conn.commit()
+    if not saved and errors:
+        return jsonify({"error": "; ".join(errors)}), 400
+    return jsonify({"ok": True, "saved": saved, "errors": errors})
+
+
+@app.route("/api/public/attachments/<token>", methods=["GET"])
+def api_public_att_list(token):
+    info = PUB_TOKENS.get(token)
+    if not info or info["expires"] < datetime.now(timezone.utc).timestamp():
+        PUB_TOKENS.pop(token, None)
+        return jsonify({"error": "janela de upload expirada"}), 403
+    with get_db() as conn:
+        atts = _ticket_attachments(conn, info["ticket_id"])
+    return jsonify({"ok": True, "attachments": atts})
+
+
+@app.route("/api/public/attachments/<token>/<int:att_id>/download")
+def api_public_att_download(token, att_id):
+    info = PUB_TOKENS.get(token)
+    if not info or info["expires"] < datetime.now(timezone.utc).timestamp():
+        PUB_TOKENS.pop(token, None)
+        return jsonify({"error": "janela de upload expirada"}), 403
+    with get_db() as conn:
+        row = conn.execute("SELECT * FROM ticket_attachments WHERE id = ? AND ticket_id = ?",
+                           (att_id, info["ticket_id"])).fetchone()
+    if not row:
+        return jsonify({"error": "anexo nao encontrado"}), 404
+    path = os.path.join(ATTACH_DIR, str(row["ticket_id"]), row["stored_name"])
+    if not os.path.isfile(path):
+        return jsonify({"error": "arquivo perdido"}), 404
+    return send_file(path, mimetype=row["mime"] or "application/octet-stream",
+                     as_attachment=True, download_name=row["filename"])
+
+
 @app.route("/api/notifications", methods=["GET"])
 @require_login
 def api_notifications_list():
