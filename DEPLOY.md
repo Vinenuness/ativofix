@@ -33,10 +33,10 @@ journalctl -u ativofix -f
 
 ## 6. Nginx + HTTPS (Let's Encrypt)
 sudo cp deploy/nginx-ativofix.conf /etc/nginx/sites-available/ativofix
-# troque o server_name pelo seu dominio e aponte o DNS (A record) para o IP da VPS
+# o server_name ja esta com ativofix.com.br - apenas aponte o DNS (A record) para o IP da VPS
 sudo ln -s /etc/nginx/sites-available/ativofix /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d ativofix.seudominio.com
+sudo certbot --nginx -d ativofix.com.br -d www.ativofix.com.br
 
 ## 7. Firewall (UFW)
 sudo ufw allow OpenSSH
@@ -47,4 +47,11 @@ sudo ufw enable
 0 3 * * *  cp /opt/ativofix/templates/db.sqlite3 /opt/ativofix/backups/db_$(date +%F).sqlite3
 
 ## 9. Agente
-Aponte o agente para https://ativofix.seudominio.com usando o mesmo AGENT_TOKEN.
+Aponte o agente para https://ativofix.com.br usando o mesmo AGENT_TOKEN.
+
+## 10. Convivencia com outro projeto na mesma VPS
+O AtivoFix usa a porta 8000 (apenas localhost) e nao conflita com o TeamSpeak
+(voz usa 9987/UDP, filetransfer 30033, serverquery 10011 - nenhuma e 80/443).
+Se o TeamSpeak ja tiver um site na porta 80, adicione o bloco do AtivoFix como
+um novo server block em /etc/nginx/sites-enabled/ - o nginx roteia por dominio
+(ativofix.com.br x o dominio do outro site), nao por porta.
