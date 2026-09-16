@@ -113,7 +113,32 @@ app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
     SESSION_COOKIE_SECURE=bool(IS_PRODUCTION),
+    SESSION_COOKIE_NAME="__Host_ativofix_session" if IS_PRODUCTION else "session",
+    MAX_CONTENT_LENGTH=64 * 1024 * 1024,  # teto global de upload: 64MB
 )
+
+
+@app.after_request
+def set_security_headers(resp):
+    """Headers de seguranca em todas as respostas."""
+    resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+    resp.headers.setdefault("X-Frame-Options", "DENY")
+    resp.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    resp.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    resp.headers.setdefault(
+        "Content-Security-Policy",
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com data:; "
+        "img-src 'self' data: blob:; "
+        "connect-src 'self'; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'; form-action 'self'"
+    )
+    if IS_PRODUCTION:
+        resp.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    return resp
 
 # Rate limiting (simples, sem Redis)
 try:
@@ -543,8 +568,9 @@ def require_agent_token(f):
     """Decorator para autenticação do agente"""
     @wraps(f)
     def decorated(*args, **kwargs):
-        token = request.headers.get("X-AGENT-TOKEN")
-        if token != AGENT_TOKEN:
+        token = request.headers.get("X-AGENT-TOKEN") or ""
+        import hmac as _hmac_cmp
+        if not token or not _hmac_cmp.compare_digest(token.encode(), AGENT_TOKEN.encode()):
             logger.warning(f"Tentativa de acesso não autorizado de {request.remote_addr}")
             return jsonify({"error": "unauthorized"}), 401
         return f(*args, **kwargs)
@@ -904,6 +930,10 @@ def login_page():
     if request.method == "POST":
         username = (request.form.get("username") or "").strip()
         password = (request.form.get("password") or "").strip()
+        if not username or not password:
+            return render_template("login.html", error="Informe usuário e senha")
+        if len(username) > 120 or len(password) > 200:
+            return render_template("login.html", error="Usuário ou senha inválidos")
         if username == LOGIN_USER and password == LOGIN_PASS:
             session.clear()
             session["logged_in"] = True
@@ -1050,8 +1080,8 @@ def reset_password_page(token):
     if request.method == "POST":
         password = (request.form.get("password") or "")
         confirm = (request.form.get("confirm") or "")
-        if len(password) < 6:
-            return render_template("reset_password.html", token=token, error="A senha deve ter pelo menos 6 caracteres.")
+        if len(password) < 8:
+            return render_template("reset_password.html", token=token, error="A senha deve ter pelo menos 8 caracteres.")
         if password != confirm:
             return render_template("reset_password.html", token=token, error="As senhas não coincidem.")
         with get_db() as conn:
@@ -3626,11 +3656,14 @@ def api_att_download(att_id):
         return jsonify({"error": "anexo nao encontrado"}), 404
     if not ticket_in_scope(row["ticket_id"]):
         return jsonify({"error": "sem acesso a este chamado"}), 403
-    path = os.path.join(ATTACH_DIR, str(row["ticket_id"]), row["stored_name"])
+    safe_name = os.path.basename(row["stored_name"])
+    if safe_name != row["stored_name"]:
+        return jsonify({"error": "anexo invalido"}), 400
+    path = os.path.join(ATTACH_DIR, str(row["ticket_id"]), safe_name)
     if not os.path.isfile(path):
         return jsonify({"error": "arquivo perdido"}), 404
     return send_file(path, mimetype=row["mime"] or "application/octet-stream",
-                     as_attachment=True, download_name=row["filename"])
+                     as_attachment=True, download_name=os.path.basename(row["filename"]))
 
 
 @app.route("/api/attachments/<int:att_id>", methods=["DELETE"])
