@@ -1,0 +1,118 @@
+/* ============================================================
+   AtivoFix — Camada global de refinamento (design system)
+   Objetivo: identidade sóbria e consistente em todas as telas.
+   Carregada por todas as páginas APÓS o CSS local.
+   ============================================================ */
+
+:root {
+  --af-bg: #14181c;
+  --af-surface: #1b2126;
+  --af-border: #2a323a;
+  --af-text: #e4e8ea;
+  --af-muted: #98a2ab;
+  --af-steel: #9fb3c0;
+  --af-focus: rgba(159, 179, 192, 0.14);
+}
+
+html { color-scheme: dark; }
+
+/* Tipografia única em todo o sistema */
+body, button, input, select, textarea {
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
+}
+body {
+  background: var(--af-bg) !important;
+  letter-spacing: 0.1px;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4 { letter-spacing: -0.2px; }
+
+/* Fundo com grade: linhas neutras em vez de verde-água */
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px) !important;
+}
+
+/* Esferas de brilho decorativas: desligadas */
+.bg-glow, .glow, .glow-orb { display: none !important; }
+
+/* Títulos de marca: cor sólida, sem gradiente/texto-recortado */
+.brand-text, .logo-title, .brand, .brand-name, .af-gradient-text {
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  -webkit-text-fill-color: #f2f4f5 !important;
+  color: #f2f4f5 !important;
+}
+
+/* Botão primário / CTAs: sólido claro, sem gradiente nem sombra colorida */
+.btn-primary, .menu-btn, .login-btn, .btn-cta, .btn-gradient {
+  background: #f2f4f5 !important;
+  color: #171b1f !important;
+  border: none !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.35) !important;
+  font-weight: 600 !important;
+}
+.btn-primary:hover, .menu-btn:hover, .login-btn:hover,
+.btn-cta:hover, .btn-gradient:hover {
+  background: #dfe4e8 !important;
+  transform: none !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
+}
+.btn-primary:active, .menu-btn:active, .login-btn:active {
+  transform: none !important;
+}
+
+/* Botões secundários: hover neutro (sem verde-água) */
+.btn:hover {
+  background: #232a31 !important;
+  border-color: #3a444e !important;
+  color: #e4e8ea !important;
+}
+
+/* Chips de TAG: contorno discreto, sem gradiente */
+.tag-badge {
+  background: transparent !important;
+  color: #c6cdd2 !important;
+  border: 1px solid #39434c !important;
+  border-radius: 5px !important;
+  padding: 1px 7px !important;
+  font-weight: 600 !important;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.3px;
+}
+
+/* Foco de formulários: anel discreto em vez de verde-água */
+input:focus, select:focus, textarea:focus {
+  border-color: #4d5a64 !important;
+  box-shadow: 0 0 0 3px var(--af-focus) !important;
+}
+
+/* Ícone/logo quadrado: sem sombra colorida */
+.logo-icon, .brand-icon {
+  box-shadow: none !important;
+  background: #242b31 !important;
+  border: 1px solid var(--af-border);
+}
+
+/* Links comuns: aço neutro em vez de verde-água */
+.footer-links a, .links a, .af-link { color: var(--af-steel) !important; }
+.links a:hover, .footer-links a:hover { text-decoration: underline; }
+
+/* Cartões: transição mais discreta, sem "pulo" */
+.card { transition: border-color 0.15s ease, box-shadow 0.15s ease !important; }
+.card:hover { transform: none !important; box-shadow: 0 4px 14px rgba(0,0,0,0.25) !important; }
+
+/* Modais: sombra neutra */
+.modal { backdrop-filter: blur(2px); }
+.modalBox { border-radius: 12px !important; box-shadow: 0 18px 44px rgba(0,0,0,0.5) !important; }
+
+/* Scrollbar discreta */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #2c343c; border-radius: 6px; border: 2px solid var(--af-bg); }
+::-webkit-scrollbar-thumb:hover { background: #3a444e; }
+
+/* Seleção de texto */
+::selection { background: rgba(159,179,192,0.28); }
