@@ -1854,6 +1854,73 @@ def api_users_update(user_id):
     return jsonify({"ok": True})
 
 
+def _send_set_password_email(to_email, set_url, username):
+    """E-mail de definir senha (admin enviou), estilo Nextcloud"""
+    subject = "[AtivoFix] Definir senha da sua conta"
+    body = f"""<div style="font-family:Inter,sans-serif;max-width:600px;margin:0 auto">
+    <div style="background:linear-gradient(135deg,#2dd4bf,#14b8a6);padding:20px;border-radius:12px 12px 0 0;text-align:center">
+        <h1 style="color:white;margin:0">AtivoFix</h1>
+        <p style="color:rgba(255,255,255,.8);margin:4px 0 0">Definir Senha</p>
+    </div>
+    <div style="background:#1e293b;padding:24px;border-radius:0 0 12px 12px;color:#e2e8f0">
+        <h2 style="margin:0 0 16px">Olá, {username}!</h2>
+        <p>Um administrador gerou um link para você <strong>definir (ou redefinir) a senha</strong> da sua conta no <strong>AtivoFix</strong>.</p>
+        <div style="background:rgba(51,65,85,.3);padding:12px;border-radius:8px;margin:16px 0">
+            <p style="margin:0;font-size:13px;color:#94a3b8">Clique no botão abaixo para criar sua nova senha. O link expira em <strong>30 minutos</strong> e só pode ser usado uma vez.</p>
+        </div>
+        <div style="text-align:center;margin:24px 0">
+            <a href="{set_url}" style="background:linear-gradient(135deg,#2dd4bf,#14b8a6);color:white;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:bold;display:inline-block">Definir minha senha</a>
+        </div>
+        <p style="font-size:13px;color:#94a3b8">Se o botão não funcionar, copie e cole este link no navegador:</p>
+        <p style="font-size:12px;color:#64748b;word-break:break-all">{set_url}</p>
+        <p style="font-size:12px;color:#64748b;margin-top:16px">Se você não espera este e-mail, ignore — sua senha atual continua funcionando.</p>
+    </div>
+</div>"""
+    return send_email(to_email, subject, body)
+
+
+@app.route("/api/users/<int:user_id>/reset-password", methods=["POST"])
+@require_login
+def api_user_admin_reset_password(user_id):
+    """Admin envia link de definicao de senha para o usuario (estilo Nextcloud)."""
+    role, my_unit_ids = current_user_access()
+    if role == "tech":
+        return jsonify({"error": "sem permissão"}), 403
+    with get_db() as conn:
+        user = conn.execute("SELECT user_id, username, email, tenant_id FROM users WHERE user_id = ?", (user_id,)).fetchone()
+    if not user:
+        return jsonify({"error": "usuário não encontrado"}), 404
+    # unit_admin so reseta usuarios dentro das proprias unidades
+    if role == "unit_admin":
+        with get_db() as conn:
+            ph = ",".join("?" * len(my_unit_ids))
+            row = conn.execute(
+                f"SELECT COUNT(*) as cnt FROM user_units WHERE user_id = ? AND unit_id IN ({ph})",
+                [user_id] + list(my_unit_ids)
+            ).fetchone()
+        if not row or row["cnt"] == 0:
+            return jsonify({"error": "sem acesso a este usuário"}), 403
+    if not user["email"]:
+        return jsonify({"error": "usuário sem e-mail cadastrado"}), 400
+    import secrets
+    token = secrets.token_urlsafe(48)
+    with get_db() as conn:
+        conn.execute(
+            "INSERT INTO password_resets (token, email, created_at, used) VALUES (?, ?, ?, 0)",
+            (token, user["email"], utc_now_iso())
+        )
+        conn.commit()
+    reset_url = url_for("reset_password_page", token=token, _external=True)
+    sent = _send_set_password_email(user["email"], reset_url, user["username"])
+    logger.info(f"Admin resetou senha de {user['username']} (email sent={sent})")
+    resp = {"ok": True, "sent": bool(sent), "email": user["email"]}
+    if not sent:
+        # SMTP indisponivel: admin pode copiar o link e mandar por outro canal
+        resp["reset_url"] = reset_url
+        resp["warning"] = "SMTP não configurado. Copie o link abaixo e envie ao usuário."
+    return jsonify(resp)
+
+
 @app.route("/api/users/<int:user_id>", methods=["DELETE"])
 @require_login
 def api_users_delete(user_id):
