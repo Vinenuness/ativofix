@@ -1417,6 +1417,13 @@ def api_agent_bind():
         return jsonify({"error": "invalid tag format"}), 400
     with get_db() as conn:
         conn.execute("UPDATE computers SET tag_evo = ? WHERE device_uid = ? OR agent_id = ?", (tag_evo, device_uid, device_uid))
+        # TAG ja usada por outro PC de outra empresa -> novo PC herda a empresa dela
+        _t = conn.execute(
+            "SELECT tenant_id FROM computers WHERE tag_evo = ? AND device_uid != ? AND tenant_id != 1 LIMIT 1",
+            (tag_evo, device_uid)
+        ).fetchone()
+        if _t:
+            conn.execute("UPDATE computers SET tenant_id = ? WHERE device_uid = ? OR agent_id = ?", (_t["tenant_id"], device_uid, device_uid))
         conn.commit()
     return jsonify({"status": "ok", "tag_evo": tag_evo})
 
