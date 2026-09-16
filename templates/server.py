@@ -184,7 +184,10 @@ def init_db():
                 user_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 tenant_id INTEGER NOT NULL DEFAULT 1,
                 username TEXT NOT NULL,
+                full_name TEXT,
                 email TEXT NOT NULL,
+                phone TEXT,
+                cpf TEXT,
                 password_hash TEXT NOT NULL,
                 is_admin INTEGER DEFAULT 0,
                 is_unit_admin INTEGER DEFAULT 0,
@@ -464,6 +467,10 @@ def migrate_db():
                 'ALTER TABLE tickets ADD COLUMN location_id INTEGER',
                 'ALTER TABLE users ADD COLUMN is_unit_admin INTEGER DEFAULT 0',
                 'ALTER TABLE users ADD COLUMN manage_scripts INTEGER DEFAULT 0',
+                'ALTER TABLE users ADD COLUMN phone TEXT',
+                'ALTER TABLE users ADD COLUMN cpf TEXT',
+                'ALTER TABLE users ADD COLUMN full_name TEXT',
+                'ALTER TABLE tickets ADD COLUMN cpf TEXT',
                 'ALTER TABLE tickets ADD COLUMN rating INTEGER',
                 'ALTER TABLE tickets ADD COLUMN rating_comment TEXT',
             ]:
@@ -844,8 +851,8 @@ def login_page():
         # Check tenant users
         with get_db() as conn:
             user = conn.execute(
-                "SELECT user_id, tenant_id, password_hash FROM users WHERE username = ?",
-                (username,)
+                "SELECT user_id, tenant_id, password_hash FROM users WHERE lower(username) = lower(?) OR lower(email) = lower(?)",
+                (username, username)
             ).fetchone()
             if user:
                 import hashlib
@@ -1620,6 +1627,26 @@ def api_me():
     })
 
 
+def _clean_cpf(v):
+    """Deixa so digitos do CPF."""
+    import re as _re
+    return _re.sub(r"\D", "", str(v or ""))
+
+
+def _validate_cpf(cpf, allow_empty=False):
+    """Retorna mensagem de erro ou None se valido (valida digitos verificadores)."""
+    if not cpf:
+        return None if allow_empty else "CPF e obrigatorio"
+    if len(cpf) != 11 or cpf == cpf[0] * 11:
+        return "CPF invalido"
+    for i in (9, 10):
+        _sum = sum(int(cpf[n]) * (i + 1 - n) for n in range(i))
+        _d = ((_sum * 10) % 11) % 10
+        if _d != int(cpf[i]):
+            return "CPF invalido"
+    return None
+
+
 @app.route("/api/users", methods=["GET"])
 @require_login
 def api_users_list():
@@ -1629,7 +1656,7 @@ def api_users_list():
         if role == "master" and not session.get("user_id"):
             # env master (admin/admin): vê usuários de todas as empresas
             rows = conn.execute(
-                """SELECT u.user_id, u.username, u.email, u.is_admin, u.is_unit_admin,
+                """SELECT u.user_id, u.username, u.full_name, u.email, u.phone, u.cpf, u.is_admin, u.is_unit_admin,
                           u.manage_scripts, u.tenant_id, u.created_at, t.name AS tenant_name
                    FROM users u LEFT JOIN tenants t ON u.tenant_id = t.tenant_id
                    ORDER BY t.name, u.username"""
@@ -1637,7 +1664,7 @@ def api_users_list():
         elif role == "master":
             # admin da empresa: somente usuários da própria empresa
             rows = conn.execute(
-                "SELECT user_id, username, email, is_admin, is_unit_admin, manage_scripts, tenant_id, created_at, '' AS tenant_name FROM users WHERE tenant_id = ? ORDER BY username",
+                "SELECT user_id, username, full_name, email, phone, cpf, is_admin, is_unit_admin, manage_scripts, tenant_id, created_at, '' AS tenant_name FROM users WHERE tenant_id = ? ORDER BY username",
                 (tid,)
             ).fetchall()
         else:
@@ -1646,7 +1673,7 @@ def api_users_list():
                 return jsonify([])
             ph = ",".join("?" * len(unit_ids))
             rows = conn.execute(
-                f"""SELECT DISTINCT u.user_id, u.username, u.email, u.is_admin, u.is_unit_admin,
+                f"""SELECT DISTINCT u.user_id, u.username, u.full_name, u.email, u.phone, u.cpf, u.is_admin, u.is_unit_admin,
                            u.manage_scripts, u.tenant_id, u.created_at, '' AS tenant_name
                     FROM users u
                     JOIN user_units uu ON uu.user_id = u.user_id
@@ -1667,10 +1694,23 @@ def api_users_create():
     username = (data.get("username") or "").strip()
     email = (data.get("email") or "").strip()
     password = data.get("password") or ""
+    full_name = (data.get("name") or "").strip()
+    phone = (data.get("phone") or "").strip()
+    cpf = _clean_cpf(data.get("cpf"))
     is_admin = 1 if data.get("is_admin") else 0
     is_unit_admin = 1 if data.get("is_unit_admin") else 0
     manage_scripts = 1 if data.get("manage_scripts") else 0
     unit_ids = data.get("unit_ids") or []
+    _cpf_err = _validate_cpf(cpf)
+    if _cpf_err:
+        return jsonify({"error": _cpf_err}), 400
+    with get_db() as conn:
+        _dup = conn.execute(
+            "SELECT username FROM users WHERE lower(email) = lower(?)" + (" OR cpf = ?" if cpf else ""),
+            (email, cpf) if cpf else (email,)
+        ).fetchone()
+    if _dup:
+        return jsonify({"error": "e-mail ou CPF ja cadastrado para " + _dup["username"]}), 400
     # Empresa do novo usuário: env master escolhe; admin de empresa/unidade fica na própria
     if not session.get("user_id"):
         try:
@@ -1721,8 +1761,8 @@ def api_users_create():
     with get_db() as conn:
         try:
             conn.execute(
-                "INSERT INTO users (username, email, password_hash, is_admin, is_unit_admin, manage_scripts, tenant_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                (username, email, password_hash, is_admin, is_unit_admin, manage_scripts, tid, now)
+                "INSERT INTO users (username, full_name, email, phone, cpf, password_hash, is_admin, is_unit_admin, manage_scripts, tenant_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (username, full_name, email, phone, cpf, password_hash, is_admin, is_unit_admin, manage_scripts, tid, now)
             )
             conn.commit()
             user_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
@@ -1734,7 +1774,7 @@ def api_users_create():
             conn.commit()
         except Exception as e:
             if "UNIQUE" in str(e):
-                return jsonify({"error": "username already exists"}), 400
+                return jsonify({"error": "usuario, e-mail ou CPF ja cadastrado"}), 400
             raise
     logger.info(f"Usuario criado: {username}")
     return jsonify({"ok": True, "user_id": user_id})
@@ -1750,9 +1790,22 @@ def api_users_update(user_id):
     username = (data.get("username") or "").strip()
     email = (data.get("email") or "").strip()
     password = data.get("password") or ""
+    full_name = (data.get("name") or "").strip()
+    phone = (data.get("phone") or "").strip()
+    cpf = _clean_cpf(data.get("cpf"))
     is_admin = 1 if data.get("is_admin") else 0
     is_unit_admin = 1 if data.get("is_unit_admin") else 0
     manage_scripts = 1 if data.get("manage_scripts") else 0
+    _cpf_err = _validate_cpf(cpf, allow_empty=True)
+    if _cpf_err:
+        return jsonify({"error": _cpf_err}), 400
+    with get_db() as conn:
+        _dup = conn.execute(
+            "SELECT username FROM users WHERE (lower(email) = lower(?)" + (" OR cpf = ?" if cpf else "") + ") AND user_id != ?",
+            (email, cpf, user_id) if cpf else (email, user_id)
+        ).fetchone()
+    if _dup:
+        return jsonify({"error": "e-mail ou CPF ja cadastrado para " + _dup["username"]}), 400
     # env master pode mover o usuário para outra empresa; demais ficam na própria
     new_tid = None
     if not session.get("user_id") and data.get("tenant_id"):
@@ -1781,8 +1834,8 @@ def api_users_update(user_id):
             if is_admin:
                 return jsonify({"error": "admin da unidade não pode promover admin master"}), 403
         password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode() if password else None
-        cols = ["username = ?", "email = ?", "is_admin = ?", "is_unit_admin = ?", "manage_scripts = ?"]
-        params = [username, email, is_admin, is_unit_admin, manage_scripts]
+        cols = ["username = ?", "full_name = ?", "email = ?", "phone = ?", "cpf = ?", "is_admin = ?", "is_unit_admin = ?", "manage_scripts = ?"]
+        params = [username, full_name, email, phone, cpf, is_admin, is_unit_admin, manage_scripts]
         if password_hash:
             cols.append("password_hash = ?")
             params.append(password_hash)
@@ -2634,6 +2687,10 @@ def api_tickets_create():
     description = (data.get("description") or "").strip()
     agent_id = data.get("agent_id")
     priority = data.get("priority", "medium")
+    cpf = _clean_cpf(data.get("cpf"))
+    cpf_err = _validate_cpf(cpf)
+    if cpf_err:
+        return jsonify({"error": cpf_err}), 400
     
     if not title:
         return jsonify({"error": "title is required"}), 400
@@ -2654,8 +2711,8 @@ def api_tickets_create():
         if unit_id is None and role != "master":
             unit_id = my_unit_ids[0] if my_unit_ids else None
         conn.execute(
-            "INSERT INTO tickets (tenant_id, agent_id, title, description, status, priority, created_by, unit_id, sla_due, created_at, updated_at) VALUES (?, ?, ?, ?, 'open', ?, ?, ?, ?, ?, ?)",
-            (tid, agent_id, title, description, priority, user, unit_id, sla_due, now, now)
+            "INSERT INTO tickets (tenant_id, agent_id, title, description, status, priority, created_by, cpf, unit_id, sla_due, created_at, updated_at) VALUES (?, ?, ?, ?, 'open', ?, ?, ?, ?, ?, ?, ?)",
+            (tid, agent_id, title, description, priority, user, cpf, unit_id, sla_due, now, now)
         )
         ticket_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
         conn.commit()
@@ -3244,7 +3301,7 @@ def api_ticket_track():
         tickets.append({
             'ticket_id': r['ticket_id'], 'title': r['title'],
             'description': r['description'], 'priority': r['priority'],
-            'status': r['status'], 'created_by': r['created_by'],
+            'status': r['status'], 'created_by': r['created_by'], 'cpf': r['cpf'] if 'cpf' in r.keys() else None,
             'created_at': r['created_at'], 'resolved_at': r['resolved_at'],
             'closed_at': r['closed_at'], 'resolution_notes': r['resolution_notes'],
             'rating': r['rating'] if 'rating' in r.keys() else None,
@@ -3272,16 +3329,20 @@ def api_ticket_public():
     priority = data.get("priority", "medium")
     created_by = (data.get("created_by") or "Anonimo").strip()
     email = (data.get("email") or "").strip() or None
+    cpf = _clean_cpf(data.get("cpf"))
     if email and not is_valid_email(email):
         return jsonify({"error": "E-mail inválido"}), 400
+    _cpf_err = _validate_cpf(cpf)
+    if _cpf_err:
+        return jsonify({"error": _cpf_err}), 400
     if not title or not desc:
         return jsonify({"error": "Titulo e descricao sao obrigatorios"}), 400
     now = utc_now_iso()
     user = session.get("user", created_by)
     tenant_id = data.get("tenant_id", get_user_tenant())
     with get_db() as conn:
-        conn.execute("INSERT INTO tickets (title, description, priority, status, created_by, sla_due, created_at, updated_at, tenant_id) VALUES (?, ?, ?, 'open', ?, ?, ?, ?, ?)",
-            (title, desc, priority, created_by, sla_due_from(now, priority), now, now, tenant_id))
+        conn.execute("INSERT INTO tickets (title, description, priority, status, created_by, cpf, sla_due, created_at, updated_at, tenant_id) VALUES (?, ?, ?, 'open', ?, ?, ?, ?, ?, ?)",
+            (title, desc, priority, created_by, cpf, sla_due_from(now, priority), now, now, tenant_id))
         ticket_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
         conn.execute("INSERT INTO ticket_history (ticket_id, action, old_value, new_value, performed_by, created_at) VALUES (?, 'created', NULL, 'open', ?, ?)",
             (ticket_id, created_by, now))
