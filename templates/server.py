@@ -2072,10 +2072,19 @@ def api_computer_set_unit(agent_id):
             return jsonify({"error": "sem acesso a esta unidade"}), 403
     with get_db() as conn:
         if unit_id:
-            result = conn.execute(
-                "UPDATE computers SET unit_id = ? WHERE agent_id = ?",
-                (unit_id, agent_id)
-            )
+            # vincular a unidade tambem move o PC para a empresa (tenant) da unidade
+            _u = conn.execute("SELECT tenant_id FROM units WHERE unit_id = ?", (unit_id,)).fetchone()
+            new_tid = _u["tenant_id"] if _u else None
+            if new_tid:
+                result = conn.execute(
+                    "UPDATE computers SET unit_id = ?, tenant_id = ? WHERE agent_id = ?",
+                    (unit_id, new_tid, agent_id)
+                )
+            else:
+                result = conn.execute(
+                    "UPDATE computers SET unit_id = ? WHERE agent_id = ?",
+                    (unit_id, agent_id)
+                )
         else:
             result = conn.execute(
                 "UPDATE computers SET unit_id = NULL WHERE agent_id = ?",
