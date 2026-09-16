@@ -188,6 +188,7 @@ def init_db():
                 email TEXT NOT NULL,
                 phone TEXT,
                 cpf TEXT,
+                notify_email INTEGER DEFAULT 0,
                 password_hash TEXT NOT NULL,
                 is_admin INTEGER DEFAULT 0,
                 is_unit_admin INTEGER DEFAULT 0,
@@ -470,6 +471,7 @@ def migrate_db():
                 'ALTER TABLE users ADD COLUMN phone TEXT',
                 'ALTER TABLE users ADD COLUMN cpf TEXT',
                 'ALTER TABLE users ADD COLUMN full_name TEXT',
+                'ALTER TABLE users ADD COLUMN notify_email INTEGER DEFAULT 0',
                 'ALTER TABLE tickets ADD COLUMN cpf TEXT',
                 'ALTER TABLE tickets ADD COLUMN rating INTEGER',
                 'ALTER TABLE tickets ADD COLUMN rating_comment TEXT',
@@ -687,6 +689,69 @@ def create_notification(tenant_id, title, message, link=None, unit_id=None, user
         logger.warning(f"Falha ao criar notificacao: {e}")
 
 
+def _email_unit_subscribers(ticket_id, subject_prefix, message):
+    """Envia e-mail de evento do chamado para usuarios opt-in da unidade do chamado.
+
+    Regras:
+      - So usuarios com notify_email = 1
+      - Vinculados `as unidades do chamado (via user_units)
+      - Admins de empresa com notify_email = 1 recebem todos da empresa
+      - Nada e enviado para o proprio solicitante (ele ja recebe o e-mail de status)
+    """
+    try:
+        with get_db() as conn:
+            t = conn.execute("SELECT tenant_id, unit_id, title, created_by FROM tickets WHERE ticket_id = ?", (ticket_id,)).fetchone()
+            if not t:
+                return
+            tid, unit_id = t["tenant_id"], t["unit_id"]
+            recipients = set()
+            # usuarios da unidade (ou de todas as unidades da empresa se o chamado nao tem unidade)
+            if unit_id:
+                rows = conn.execute(
+                    """SELECT DISTINCT u.user_id, u.email FROM users u
+                       JOIN user_units uu ON uu.user_id = u.user_id
+                       WHERE u.notify_email = 1 AND u.email != '' AND uu.unit_id = ?""",
+                    (unit_id,),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    "SELECT user_id, email FROM users WHERE notify_email = 1 AND email != '' AND tenant_id = ?",
+                    (tid,),
+                ).fetchall()
+            for r in rows:
+                recipients.add(r["email"])
+            # admins da empresa opt-in recebem tudo da empresa
+            for r in conn.execute(
+                "SELECT email FROM users WHERE notify_email = 1 AND email != '' AND is_admin = 1 AND tenant_id = ?",
+                (tid,),
+            ):
+                recipients.add(r["email"])
+            # nao notifica o proprio solicitante
+            cb = t["created_by"] or ""
+            if "(" in cb:
+                requester = cb.split("(")[1].rstrip(")").strip().lower()
+                recipients = {e for e in recipients if e.lower() != requester}
+        subject = f"[AtivoFix] {subject_prefix} #{ticket_id} - {t['title']}"
+        body = f"""<div style="font-family:Inter,sans-serif;max-width:600px;margin:0 auto">
+    <div style="background:linear-gradient(135deg,#2dd4bf,#14b8a6);padding:20px;border-radius:12px 12px 0 0;text-align:center">
+        <h1 style="color:white;margin:0">AtivoFix</h1>
+        <p style="color:rgba(255,255,255,.8);margin:4px 0 0">Notificacao de Chamado</p>
+    </div>
+    <div style="background:#1e293b;padding:24px;border-radius:0 0 12px 12px;color:#e2e8f0">
+        <h2 style="margin:0 0 12px">#{ticket_id} - {t['title']}</h2>
+        <p style="margin:0 0 16px">{message}</p>
+        <div style="text-align:center;margin:20px 0">
+            <a href="{BASE_URL if 'BASE_URL' in globals() else ''}/chamados" style="background:linear-gradient(135deg,#2dd4bf,#14b8a6);color:white;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:bold;display:inline-block">Abrir Chamados</a>
+        </div>
+        <p style="font-size:12px;color:#64748b">Voce recebe este e-mail porque faz parte do T.I. desta unidade. Para deixar de receber, fale com o administrador.</p>
+    </div>
+</div>"""
+        for email in recipients:
+            send_email(email, subject, body)
+    except Exception as e:
+        logger.warning(f"Falha _email_unit_subscribers: {e}")
+
+
 def notify_ticket_event(ticket_id, title, message, link=None, only_assigned_user=None):
     """Notifica afetados de um chamado (admins + usuarios da unidade ou o atribuido)."""
     try:
@@ -699,6 +764,7 @@ def notify_ticket_event(ticket_id, title, message, link=None, only_assigned_user
             create_notification(tid, title, message, link=link, user_ids=[only_assigned_user])
         else:
             create_notification(tid, title, message, link=link, unit_id=unit_id)
+        _email_unit_subscribers(ticket_id, title.split(':')[0].replace('Novo chamado', 'Novo Chamado'), message)
     except Exception as e:
         logger.warning(f"Falha notify_ticket_event: {e}")
 
@@ -1656,7 +1722,7 @@ def api_users_list():
         if role == "master" and not session.get("user_id"):
             # env master (admin/admin): vê usuários de todas as empresas
             rows = conn.execute(
-                """SELECT u.user_id, u.username, u.full_name, u.email, u.phone, u.cpf, u.is_admin, u.is_unit_admin,
+                """SELECT u.user_id, u.username, u.full_name, u.email, u.phone, u.cpf, u.notify_email, u.is_admin, u.is_unit_admin,
                           u.manage_scripts, u.tenant_id, u.created_at, t.name AS tenant_name
                    FROM users u LEFT JOIN tenants t ON u.tenant_id = t.tenant_id
                    ORDER BY t.name, u.username"""
@@ -1664,7 +1730,7 @@ def api_users_list():
         elif role == "master":
             # admin da empresa: somente usuários da própria empresa
             rows = conn.execute(
-                "SELECT user_id, username, full_name, email, phone, cpf, is_admin, is_unit_admin, manage_scripts, tenant_id, created_at, '' AS tenant_name FROM users WHERE tenant_id = ? ORDER BY username",
+                "SELECT user_id, username, full_name, email, phone, cpf, notify_email, is_admin, is_unit_admin, manage_scripts, tenant_id, created_at, '' AS tenant_name FROM users WHERE tenant_id = ? ORDER BY username",
                 (tid,)
             ).fetchall()
         else:
@@ -1673,7 +1739,7 @@ def api_users_list():
                 return jsonify([])
             ph = ",".join("?" * len(unit_ids))
             rows = conn.execute(
-                f"""SELECT DISTINCT u.user_id, u.username, u.full_name, u.email, u.phone, u.cpf, u.is_admin, u.is_unit_admin,
+                f"""SELECT DISTINCT u.user_id, u.username, u.full_name, u.email, u.phone, u.cpf, u.notify_email, u.is_admin, u.is_unit_admin,
                            u.manage_scripts, u.tenant_id, u.created_at, '' AS tenant_name
                     FROM users u
                     JOIN user_units uu ON uu.user_id = u.user_id
@@ -1697,6 +1763,7 @@ def api_users_create():
     full_name = (data.get("name") or "").strip()
     phone = (data.get("phone") or "").strip()
     cpf = _clean_cpf(data.get("cpf"))
+    notify_email = 1 if data.get("notify_email") else 0
     is_admin = 1 if data.get("is_admin") else 0
     is_unit_admin = 1 if data.get("is_unit_admin") else 0
     manage_scripts = 1 if data.get("manage_scripts") else 0
@@ -1761,8 +1828,8 @@ def api_users_create():
     with get_db() as conn:
         try:
             conn.execute(
-                "INSERT INTO users (username, full_name, email, phone, cpf, password_hash, is_admin, is_unit_admin, manage_scripts, tenant_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (username, full_name, email, phone, cpf, password_hash, is_admin, is_unit_admin, manage_scripts, tid, now)
+                "INSERT INTO users (username, full_name, email, phone, cpf, notify_email, password_hash, is_admin, is_unit_admin, manage_scripts, tenant_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (username, full_name, email, phone, cpf, notify_email, password_hash, is_admin, is_unit_admin, manage_scripts, tid, now)
             )
             conn.commit()
             user_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
@@ -1793,6 +1860,7 @@ def api_users_update(user_id):
     full_name = (data.get("name") or "").strip()
     phone = (data.get("phone") or "").strip()
     cpf = _clean_cpf(data.get("cpf"))
+    notify_email = 1 if data.get("notify_email") else 0
     is_admin = 1 if data.get("is_admin") else 0
     is_unit_admin = 1 if data.get("is_unit_admin") else 0
     manage_scripts = 1 if data.get("manage_scripts") else 0
@@ -1834,8 +1902,8 @@ def api_users_update(user_id):
             if is_admin:
                 return jsonify({"error": "admin da unidade não pode promover admin master"}), 403
         password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode() if password else None
-        cols = ["username = ?", "full_name = ?", "email = ?", "phone = ?", "cpf = ?", "is_admin = ?", "is_unit_admin = ?", "manage_scripts = ?"]
-        params = [username, full_name, email, phone, cpf, is_admin, is_unit_admin, manage_scripts]
+        cols = ["username = ?", "full_name = ?", "email = ?", "phone = ?", "cpf = ?", "notify_email = ?", "is_admin = ?", "is_unit_admin = ?", "manage_scripts = ?"]
+        params = [username, full_name, email, phone, cpf, notify_email, is_admin, is_unit_admin, manage_scripts]
         if password_hash:
             cols.append("password_hash = ?")
             params.append(password_hash)
