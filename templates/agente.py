@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import time
 import uuid
@@ -28,7 +29,7 @@ except:
 # =========================
 # CONFIG
 # =========================
-SERVER_BASE_URL = os.environ.get("AGENT_SERVER_URL", "http://127.0.0.1:5000")
+SERVER_BASE_URL = os.environ.get("AGENT_SERVER_URL", "https://ativofix.com.br")
 API_URL = f"{SERVER_BASE_URL}/api/agent"
 BIND_URL = f"{SERVER_BASE_URL}/api/agent/bind"
 
@@ -36,7 +37,7 @@ BIND_URL = f"{SERVER_BASE_URL}/api/agent/bind"
 JOBS_URL = f"{SERVER_BASE_URL}/api/agent/jobs"
 JOB_RESULT_URL = f"{SERVER_BASE_URL}/api/agent/jobs/{{job_id}}/result"
 
-AGENT_TOKEN = os.environ.get("AGENT_TOKEN", "SEU_TOKEN_SUPER_SECRETO")
+AGENT_TOKEN = os.environ.get("AGENT_TOKEN", "451f686c709a28cccf5584d81f21126d50e8d79f2253840e")
 INTERVALO_SEG = int(os.environ.get("AGENT_INTERVALO_SEG", "60"))
 
 BASE_DIR = os.path.join(os.environ.get("ProgramData", r"C:\ProgramData"), "AgenteTI")
@@ -438,7 +439,32 @@ def open_file_or_folder(path: str):
             pass
 
 
+def ensure_autostart():
+    """Registra o agente no Run do Windows para iniciar com o usuario (idempotente)."""
+    if winreg is None:
+        return
+    try:
+        run_key = r"Software\Microsoft\Windows\CurrentVersion\Run"
+        name = "AtivoFixAgent"
+        if getattr(sys, "frozen", False):
+            cmd = '"' + sys.executable + '"'
+        else:
+            cmd = '"' + sys.executable + '" "' + os.path.abspath(__file__) + '"'
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, run_key) as k:
+                cur, _ = winreg.QueryValueEx(k, name)
+            if cur == cmd:
+                return  # ja registrado corretamente
+        except FileNotFoundError:
+            pass
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, run_key) as k:
+            winreg.SetValueEx(k, name, 0, winreg.REG_SZ, cmd)
+        print("Auto-start registrado:", cmd)
+    except Exception as e:
+        print("Falha ao registrar auto-start:", e)
+
 if __name__ == "__main__":
+    ensure_autostart()
     print("Agente iniciado...")
 
     while True:
