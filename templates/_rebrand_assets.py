@@ -66,6 +66,28 @@ def monochrome_dark(src_rgba, ink=(30, 41, 59, 255)):
     return out
 
 
+def print_lockup(src_rgba, ink=(30, 41, 59, 255)):
+    """Lockup para fundo CLARO (PDF): tinta branca -> ardósia; azuis preservados.
+
+    Na arte, 'ativo' e a tagline sao brancos (para fundo escuro). Em papel
+    branco sumiriam — aqui viram cinza-ardosia escuro; o azul da marca fica.
+    """
+    from PIL import ImageChops
+
+    im = src_rgba.convert("RGBA")
+    alpha = im.split()[3]
+    hsv = im.convert("RGB").convert("HSV")
+    s, v = hsv.split()[1], hsv.split()[2]
+    low_sat = s.point(lambda x: 255 if x < 70 else 0)   # branco/cinza
+    bright = v.point(lambda x: 255 if x > 130 else 0)   # claro
+    white_mask = ImageChops.multiply(low_sat, bright)
+    out = im.copy()
+    dark = Image.new("RGBA", im.size, ink)
+    out.paste(dark, (0, 0), white_mask)
+    out.putalpha(alpha)
+    return out
+
+
 def main():
     icon = crop_alpha(knock_out_black(Image.open(os.path.join(SRC, "icon-src.png"))))
     lockup = crop_alpha(knock_out_black(Image.open(os.path.join(SRC, "lockup-src.png"))))
@@ -82,6 +104,9 @@ def main():
     lockup = lockup.resize((target_w, int(lockup.height * target_w / lockup.width)), Image.LANCZOS)
     lockup.save(os.path.join(STATIC, "logo.png"))
     print("logo.png:", lockup.size)
+
+    # 2b) versao para fundo claro (cabecalho dos PDFs)
+    print_lockup(lockup).save(os.path.join(STATIC, "logo-print.png"))
 
     # 3) versao impressa (tinta unica escura, fundo transparente)
     dark = monochrome_dark(lockup, ink=(28, 36, 43, 255))

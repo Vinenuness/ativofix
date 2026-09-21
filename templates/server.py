@@ -22,6 +22,73 @@ import bcrypt
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 ATTACH_DIR = os.path.join(APP_DIR, "attachments")
 ALLOWED_ATT_EXT = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".pdf", ".txt", ".zip", ".docx", ".xlsx", ".csv", ".mp4", ".mov"}
+
+# ---------- Marca para relatorios PDF (logo azul + rodape padrao) ----------
+LOGO_PRINT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "logo-print.png")
+BRAND_BLUE = (2, 132, 199)   # azul escuro da marca (legivel em papel)
+BRAND_SLATE = (71, 85, 105)
+
+
+def get_brand_pdf():
+    """Retorna (logo_bytes, logo_size) p/ embutir nos PDFs; (None, 0) se faltar."""
+    try:
+        with open(LOGO_PRINT_PATH, "rb") as f:
+            data = f.read()
+        from PIL import Image as _Img
+        import io as _io
+        w, h = _Img.open(_io.BytesIO(data)).size
+        return data, (w, h)
+    except Exception:
+        return None, (0, 0)
+
+
+def brand_pdf_header(pdf, title):
+    """Cabecalho padrao: logo a esquerda + titulo a direita + linha azul."""
+    logo, (lw, lh) = get_brand_pdf()
+    top = pdf.t_margin
+    if logo:
+        # lockup com proporcao original ~2.74:1 (largura 58mm)
+        w_mm, h_mm = 58.0, 58.0 * lh / lw
+        try:
+            pdf.image(io.BytesIO(logo), x=pdf.l_margin, y=top + 2, w=w_mm, h=h_mm)
+        except Exception:
+            logo = None
+    if logo:
+        pdf.set_y(top + 2)
+    else:
+        pdf.set_y(top + 2)
+        pdf.set_font("Helvetica", "B", 15)
+        pdf.set_text_color(*BRAND_SLATE)
+        pdf.cell(0, 9, "AtivoFix", 0, 2, "L")
+    # titulo alinhado a direita, na mesma faixa da logo
+    pdf.set_xy(pdf.l_margin, top + 4)
+    pdf.set_font("Helvetica", "B", 14)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(0, 8, title, 0, 2, "R")
+    pdf.set_xy(pdf.l_margin, top + 12)
+    pdf.set_font("Helvetica", "", 8.5)
+    pdf.set_text_color(*BRAND_SLATE)
+    pdf.cell(0, 5, "Relatorio gerado pelo AtivoFix - gestao de inventario e chamados de TI", 0, 2, "R")
+    y_end = top + max(16.0, (58.0 * lh / lw if logo else 16.0)) + 2.0
+    pdf.set_y(y_end)
+    pdf.set_draw_color(*BRAND_BLUE)
+    pdf.set_line_width(0.5)
+    pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
+    pdf.ln(4)
+    pdf.set_text_color(0, 0, 0)
+
+
+def brand_pdf_footer(pdf):
+    """Rodape padrao: linha + marca e pagina (Fpdf2 exige {{nb}} sem f-string)."""
+    pdf.set_y(-14)
+    pdf.set_draw_color(203, 213, 225)
+    pdf.set_line_width(0.3)
+    pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
+    pdf.set_y(-12)
+    pdf.set_font("Helvetica", "I", 8)
+    pdf.set_text_color(*BRAND_SLATE)
+    pdf.cell(0, 6, "AtivoFix - Tecnologia em Movimento", 0, 0, "L")
+    pdf.cell(0, 6, "Pagina " + str(pdf.page_no()) + "/{{nb}}", 0, 0, "R")
 MAX_ATT_SIZE = 15 * 1024 * 1024  # 15MB por arquivo
 DB_PATH = os.environ.get("DB_PATH", os.path.join(APP_DIR, "db.sqlite3"))
 DB_BACKUP_DIR = os.environ.get("DB_BACKUP_DIR", os.path.join(APP_DIR, "backups"))
@@ -2634,14 +2701,10 @@ def api_export_pdf():
     
     class PDF(FPDF):
         def header(self):
-            self.set_font("Helvetica", "B", 14)
-            self.cell(0, 10, "Relatorio de Inventario por Unidade", 0, 1, "C")
-            self.ln(5)
+            brand_pdf_header(self, "Relatorio de Inventario por Unidade")
         
         def footer(self):
-            self.set_y(-15)
-            self.set_font("Helvetica", "I", 8)
-            self.cell(0, 10, f"Pagina {self.page_no()}/{{nb}}", 0, 0, "C")
+            brand_pdf_footer(self)
     
     pdf = PDF()
     pdf.alias_nb_pages()
@@ -3182,10 +3245,16 @@ def api_tickets_report_pdf():
     with get_db() as conn:
         rows = conn.execute(query, params).fetchall()
         tenant = conn.execute("SELECT name FROM tenants WHERE tenant_id = ?", (tid,)).fetchone()
-    pdf = FPDF()
+    class PDF(FPDF):
+        def header(self):
+            brand_pdf_header(self, "Relatorio de Chamados")
+        
+        def footer(self):
+            brand_pdf_footer(self)
+    
+    pdf = PDF()
+    pdf.alias_nb_pages()
     pdf.add_page()
-    pdf.set_font("Helvetica", "B", 20)
-    pdf.cell(0, 15, "AtivoFix - Relatorio de Chamados", 0, 1, "C")
     pdf.set_font("Helvetica", "", 12)
     tname = tenant["name"] if tenant else "N/A"
     pdf.cell(0, 8, "Empresa: " + tname, 0, 1)
@@ -3199,6 +3268,7 @@ def api_tickets_report_pdf():
         s = r["status"]
         sc[s] = sc.get(s, 0) + 1
     pdf.set_font("Helvetica", "B", 14)
+    pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 10, "Resumo por Status", 0, 1)
     pdf.set_font("Helvetica", "", 11)
     for s, cnt in sc.items():
