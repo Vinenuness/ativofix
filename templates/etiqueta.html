@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <title>Etiqueta - {{ pc.get('_tag_evo') or pc.get('hostname','') }}</title>
-<link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png" />
-  <link rel="icon" href="/static/favicon.ico" sizes="any" />
-  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png?v=20260921a" />
+  <link rel="icon" href="/static/favicon.ico?v=20260921a" sizes="any" />
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=20260921a" />
 <style>
 @page{margin:6mm}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -30,8 +30,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#e4e8ea;padding:20px;dis
 <body>
 <div class="label">
   <div class="l-head">
-    <img src="/static/logo-dark.png" alt="AtivoFix" style="height:7mm">
-  <link rel="stylesheet" href="/static/brand.css" />
+    <img src="/static/logo-dark.png?v=20260921a" alt="AtivoFix" style="height:7mm">
+  <link rel="stylesheet" href="/static/brand.css?v=20260921a" />
     <span>ATIVOFIX</span>
   </div>
   <div class="host">{{ pc.get('_tag_evo') or pc.get('hostname','N/A') }}</div>
