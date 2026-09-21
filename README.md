@@ -80,7 +80,7 @@ pip install -r ../requirements.txt
 python server.py
 ```
 
-O painel sobe em `http://localhost:5000` e o portal público de chamados em `/abrir-chamado`.
+Depois de rodar, o painel fica disponível na porta `5000` e o portal público de chamados em `/abrir-chamado`.
 
 > ⚙️ As credenciais e segredos ficam no `.env` (veja `.env.example`) — nada sensível é versionado.
 
