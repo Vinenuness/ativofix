@@ -9,14 +9,14 @@ import io
 import os
 import re
 
-VERSAO = "20260921a"
+VERSAO = "20260921b"
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-# (nome_do_arquivo_estatico) -> sera versionado
+# (nome_do_arquivo_estatico) -> sera versionado (substitui ?v= anterior)
 ALVO = re.compile(
     r'(/static/(?:brand\.css|logo\.png|logo-icon\.png|logo-dark\.png|'
     r'favicon\.ico|favicon-32\.png|apple-touch-icon\.png))'
-    r'(?![?a-z0-9])'  # ainda sem query string
+    r'(?:\?v=[a-z0-9]+)?'
 )
 
 total_arqs = 0

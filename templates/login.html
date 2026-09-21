@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AtivoFix — Entrar</title>
-  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png?v=20260921a" />
-  <link rel="icon" href="/static/favicon.ico?v=20260921a" sizes="any" />
-  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=20260921a" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png?v=20260921b" />
+  <link rel="icon" href="/static/favicon.ico?v=20260921b" sizes="any" />
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v=20260921b" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -58,7 +58,7 @@
       pointer-events: none;
     }
     .brand-lockup { position: relative; z-index: 1; }
-    .brand-lockup img { width: 290px; max-width: 72%; display: block; }
+    .brand-lockup img { width: clamp(300px, 24vw, 380px); max-width: 80%; display: block; margin-left: -6px; }
 
     .pitch { position: relative; z-index: 1; max-width: 480px; }
     .pitch h1 {
@@ -201,7 +201,7 @@
         text-align: center;
         margin-bottom: 28px;
       }
-      .mobile-logo img { width: 210px; }
+      .mobile-logo img { width: 240px; }
     }
 
     .version {
@@ -216,7 +216,7 @@
   <!-- Lado esquerdo (desktop): identidade -->
   <aside class="brand-side">
     <div class="brand-lockup">
-      <img src="/static/logo.png?v=20260921a" alt="AtivoFix — Tecnologia em Movimento" />
+      <img src="/static/logo.png?v=20260921b" alt="AtivoFix — Tecnologia em Movimento" />
     </div>
 
     <div class="pitch">
@@ -247,7 +247,7 @@
   <main class="form-side">
     <div class="form-wrap">
       <div class="mobile-logo">
-        <img src="/static/logo.png?v=20260921a" alt="AtivoFix — Tecnologia em Movimento" />
+        <img src="/static/logo.png?v=20260921b" alt="AtivoFix — Tecnologia em Movimento" />
       </div>
       <div class="form-head">
         <h2>Acessar o painel</h2>
