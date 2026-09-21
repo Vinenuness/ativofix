@@ -9,7 +9,6 @@
 ![Python](https://img.shields.io/badge/Python-3.8%2B-3776AB?logo=python&logoColor=white)
 ![Flask](https://img.shields.io/badge/Flask-3.x-000000?logo=flask&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite&logoColor=white)
-![License](https://img.shields.io/badge/License-Proprietary-red)
 
 [Funcionalidades](#-funcionalidades) · [Arquitetura](#-arquitetura) · [Instalação](#-instalação) · [Produção](#-deploy-em-produção) · [API](#-api-pública-v1) · [Agente](#-agente-windows)
 
@@ -31,15 +30,15 @@ O **AtivoFix** centraliza todo o parque de TI da empresa em um só painel:
 | Módulo | Recursos |
 |---|---|
 | 🖥️ **Inventário** | Coleta automática de CPU, RAM, disco, SO e programas; status online; etiqueta TAG por máquina |
-| 🎫 **Chamados (OS)** | Portal público sem login; cascata Empresa→Unidade→Local; prioridade e SLA; início de atendimento com observação; conclusão; anexos (fotos/prints); CPF obrigatório; CSAT |
+| 🎫 **Chamados (OS)** | Portal público sem login; cascata Empresa→Unidade→Local; prioridade e SLA; anexos (fotos/prints); CPF; CSAT |
 | 🏢 **Multi-tenant** | Várias empresas no mesmo servidor; usuários, unidades, locais e máquinas isolados por empresa |
-| 👥 **Usuários** | Papéis (Admin Master, Admin da Empresa, Admin da Unidade, Técnico); escopo por unidade — cada um só vê o que é dele; reset de senha via e-mail |
+| 👥 **Usuários** | Papéis hierárquicos (Admin Master, Admin da Empresa, Admin da Unidade, Técnico); escopo por unidade — cada um só vê o que é dele |
 | 📄 **Relatórios** | PDF de inventário e de chamados com cabeçalho/rodapé da marca; filtros por período e unidade |
-| 🔧 **Scripts remotos** | Execução de scripts `.bat` nos PCs via agente |
+| 🔧 **Scripts remotos** | Execução de scripts `.bat` nos PCs gerenciados |
 | 📊 **Dashboard** | KPIs em tempo real, gráficos, máquinas offline, chamados por unidade |
-| 🔔 **Notificações** | E-mail por unidade: quem é vinculado a uma unidade recebe só os chamados dela |
-| 🔐 **Segurança** | bcrypt, rate limit, headers CSP/HSTS, sessão com escopo, chaves de API com hash |
-| 📣 **Divulgação** | Gerador de cartaz A4 300 DPI com QR Code do portal, personalizado pela marca |
+| 🔔 **Notificações** | E-mail por unidade: cada gestor recebe só os chamados da sua operação |
+| 🔐 **Segurança** | bcrypt, rate limiting, headers CSP/HSTS, chaves de API com hash |
+| 📣 **Divulgação** | Cartaz A4 300 DPI com QR Code do portal, na identidade da marca |
 
 ## 🏗️ Arquitetura
 
@@ -48,13 +47,13 @@ O **AtivoFix** centraliza todo o parque de TI da empresa em um só painel:
 │ Agente (PCs) │──────────► │              VPS (Ubuntu)               │
 │  agente.py   │  /api/...  │  ┌─────────┐  ┌──────────────────────┐  │
 └──────────────┘            │  │  Nginx  │─►│ Gunicorn × Flask     │  │
-                            │  │ + TLS   │  │ (templates/server.py)│  │
+                            │  │ + TLS   │  │     (server.py)      │  │
 ┌──────────────┐            │  └─────────┘  └──────────┬───────────┘  │
 │  Navegador   │──────────► │                          │              │
 │ Painel/Portal│            │              ┌───────────▼───────────┐  │
 └──────────────┘            │              │      SQLite (WAL)     │  │
                             │              └───────────────────────┘  │
-┌──────────────┐            │  SMTP (Gmail) → notificações e recovery │
+┌──────────────┐            │  SMTP → notificações e recuperação      │
 │ Sistema do   │──X-API-KEY─└─────────────────────────────────────────┘
 │ cliente      │  /api/v1/...
 └──────────────┘
@@ -66,8 +65,8 @@ O **AtivoFix** centraliza todo o parque de TI da empresa em um só painel:
 
 ```bash
 # 1. Clonar
-git clone https://github.com/Vinenuness/invpro.git
-cd invpro/templates
+git clone https://github.com/Vinenuness/ativofix.git
+cd ativofix/templates
 
 # 2. Ambiente virtual
 python -m venv .venv
@@ -81,14 +80,9 @@ pip install -r ../requirements.txt
 python server.py
 ```
 
-| Acesso | Valor |
-|---|---|
-| Painel | `http://localhost:5000` |
-| Login padrão dev | `admin` / `admin` |
-| Portal público | `http://localhost:5000/abrir-chamado` |
-| Login alternativo | `/login2` (variante fullscreen) |
+O painel sobe em `http://localhost:5000` e o portal público de chamados em `/abrir-chamado`.
 
-> ⚙️ Em produção **nunca** use `admin/admin` — defina `PANEL_USER`/`PANEL_PASS` no `.env`.
+> ⚙️ As credenciais e segredos ficam no `.env` (veja `.env.example`) — nada sensível é versionado.
 
 ## 📦 Deploy em produção
 
@@ -132,34 +126,32 @@ r = requests.post(
 print(r.json())   # {"ok": true, "ticket_id": 23}
 ```
 
-Gerencie as chaves em **Painel → Menu → API** (`/api-docs`): gerar, desativar e ver último uso. A chave é exibida uma única vez; no banco existe apenas o hash SHA-256.
+Gerencie as chaves no painel (**Menu → API**): gerar, desativar e ver último uso. A chave é exibida uma única vez; no banco existe apenas o hash SHA-256.
 
 ## 💻 Agente Windows
 
-Coleta inventário e executa scripts remotos. Compilado com PyInstaller (`AtivoFixAgente.spec`).
+Coleta inventário e executa scripts remotos. Compilado com PyInstaller.
 
 ```bash
 pip install -r requirements-agent.txt
 python agente.py                  # modo console p/ desenvolvimento
 ```
 
-Distribuição: `dist/AtivoFix-Agente-Windows.zip` → instalar e informar a **TAG** da máquina. A configuração fica em `C:\ProgramData\AgenteTI` — atualizar o `.exe` não perde o vínculo.
+Distribuição: baixe o **`AtivoFix-Agente-Windows.zip`** na [aba Releases](https://github.com/Vinenuness/ativofix/releases) → instalar e informar a **TAG** da máquina. A configuração fica em `C:\ProgramData\AgenteTI` — atualizar o `.exe` não perde o vínculo.
 
 ## 🗂️ Estrutura do projeto
 
 ```
-invpro/
+ativofix/
 ├── templates/                  # aplicação (APP_DIR aponta para cá)
-│   ├── server.py               # servidor Flask completo (~5k linhas)
+│   ├── server.py               # servidor Flask completo
 │   ├── *.html                  # 25 telas (painel, portal, relatórios...)
 │   ├── static/
 │   │   ├── brand.css           # design system global (todas as páginas)
 │   │   ├── logo*.png           # kit da marca (web, print, dark)
-│   │   ├── favicon*            # kit de ícones
-│   │   └── divulgacao/         # cartaz A4 + versão digital (QR code)
-│   ├── agente.py               # agente de coleta (mesmo código do root)
-│   ├── db.sqlite3              # banco (dev)
-│   └── .venv/                  # ambiente virtual (não versionado)
+│   │   └── divulgacao/         # cartaz A4 + arte digital (QR code)
+│   ├── agente.py               # agente de coleta
+│   └── db.sqlite3              # banco local (não versionado)
 ├── deploy/
 │   ├── ativofix.service        # unidade systemd
 │   └── nginx-ativofix.conf     # reverse proxy + TLS
@@ -174,10 +166,11 @@ Scripts utilitários em `templates/` (rodar com o Python da venv):
 
 | Script | Função |
 |---|---|
-| `_rebrand_assets.py` | Regenera todo o kit da marca a partir de `static/brand-src/` (logo, print, dark, `agent.ico`) |
-| `_gen_favicon.py` | Gera `favicon.ico` multi-tamanho + `favicon-32.png` + `apple-touch-icon.png` |
-| `_cache_bust.py` | Versiona os assets (`?v=YYYYMMDDx`) nas 25 páginas — **rode após trocar qualquer asset** |
-| `_gen_poster.py` | Gera o cartaz A4 300 DPI e a arte digital com QR code do portal |
+| `_rebrand_assets.py` | Regenera todo o kit da marca a partir de `static/brand-src/` |
+| `_gen_favicon.py` | Gera o kit de favicons multi-tamanho |
+| `_cache_bust.py` | Versiona os assets (`?v=`) em todas as páginas — rode após trocar qualquer asset |
+| `_gen_poster.py` | Gera o cartaz A4 300 DPI e a arte digital com QR code |
+| `_gen_social_preview.py` | Gera o social preview 1280×640 do repositório |
 
 ## 📄 Licença
 
