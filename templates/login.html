@@ -21,7 +21,7 @@
       --text: #e9edf0;
       --muted: #8f9aa4;
       --faint: #5c6670;
-      --steel: #9fb3c0;
+      --steel: #4db5f5;
     }
     body {
       font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -42,7 +42,7 @@
       justify-content: space-between;
       padding: 56px 64px;
       background:
-        radial-gradient(900px 500px at -10% 110%, rgba(159,179,192,0.07), transparent 60%),
+        radial-gradient(900px 500px at -10% 110%, rgba(56,189,248,0.07), transparent 60%),
         linear-gradient(160deg, #12161a 0%, #171d23 100%);
       overflow: hidden;
     }
@@ -58,13 +58,7 @@
       pointer-events: none;
     }
     .brand-lockup { position: relative; z-index: 1; }
-    .brand-lockup img { width: 240px; max-width: 60%; display: block; }
-    .brand-lockup .tagline {
-      margin-top: 14px;
-      font-size: 13px;
-      color: var(--muted);
-      letter-spacing: 0.2px;
-    }
+    .brand-lockup img { width: 290px; max-width: 72%; display: block; }
 
     .pitch { position: relative; z-index: 1; max-width: 480px; }
     .pitch h1 {
@@ -143,8 +137,8 @@
     .field input::placeholder { color: var(--faint); }
     .field input:focus {
       outline: none;
-      border-color: #56636e;
-      box-shadow: 0 0 0 3px rgba(159,179,192,0.13);
+      border-color: #2c6a94;
+      box-shadow: 0 0 0 3px rgba(56,189,248,0.14);
     }
 
     .submit-btn {
@@ -207,8 +201,7 @@
         text-align: center;
         margin-bottom: 28px;
       }
-      .mobile-logo img { width: 190px; }
-      .mobile-logo p { margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+      .mobile-logo img { width: 210px; }
     }
 
     .version {
@@ -223,8 +216,7 @@
   <!-- Lado esquerdo (desktop): identidade -->
   <aside class="brand-side">
     <div class="brand-lockup">
-      <img src="/static/logo.png" alt="AtivoFix" />
-      <div class="tagline">Gestão de inventário e chamados de TI</div>
+      <img src="/static/logo.png" alt="AtivoFix — Tecnologia em Movimento" />
     </div>
 
     <div class="pitch">
@@ -255,8 +247,7 @@
   <main class="form-side">
     <div class="form-wrap">
       <div class="mobile-logo">
-        <img src="/static/logo.png" alt="AtivoFix" />
-        <p>Gestão de inventário e chamados de TI</p>
+        <img src="/static/logo.png" alt="AtivoFix — Tecnologia em Movimento" />
       </div>
       <div class="form-head">
         <h2>Acessar o painel</h2>
@@ -287,7 +278,7 @@
         Use o <a href="/abrir-chamado">Portal do Usuário</a> — não precisa de login.
       </div>
 
-      <div class="version">AtivoFix v2.0 — Gestão Inteligente de Inventário</div>
+      <div class="version">AtivoFix v2.0 — Tecnologia em Movimento</div>
     </div>
   </main>
 </body>

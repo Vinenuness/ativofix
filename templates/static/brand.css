@@ -11,7 +11,9 @@
   --af-text: #e4e8ea;
   --af-muted: #98a2ab;
   --af-steel: #9fb3c0;
-  --af-focus: rgba(159, 179, 192, 0.14);
+  --af-blue: #38bdf8;
+  --af-blue-soft: rgba(56, 189, 248, 0.12);
+  --af-focus: rgba(56, 189, 248, 0.13);
 }
 
 html { color-scheme: dark; }
@@ -115,15 +117,15 @@ input:focus, select:focus, textarea:focus {
 ::-webkit-scrollbar-thumb:hover { background: #3a444e; }
 
 /* Seleção de texto */
-::selection { background: rgba(159,179,192,0.28); }
+::selection { background: rgba(56,189,248,0.25); }
 
 /* ============================================================
    CAMADA 2 — Neutralização final do verde-água e polimento
    ============================================================ */
 
 :root {
-  --af-accent: #9fb3c0;
-  --af-accent-soft: rgba(159,179,192,0.12);
+  --af-accent: #38bdf8; /* azul da marca (logo 2026) */
+  --af-accent-soft: rgba(56,189,248,0.12);
   --af-teal: #2dd4bf; /* cor legada a neutralizar */
 }
 
@@ -241,10 +243,10 @@ tr:hover td { background: rgba(255,255,255,0.015) !important; }
 
 /* Ações "Iniciar" e ponto do histórico: aço neutro */
 .btn-start {
-  background: var(--af-accent-soft, rgba(159,179,192,0.12)) !important;
-  color: #c3cdd5 !important;
+  background: var(--af-accent-soft, rgba(56,189,248,0.12)) !important;
+  color: #bfe2fa !important;
 }
-.history-dot { background: #6b7681 !important; }
+.history-dot { background: #38bdf8 !important; }
 
 /* ============================================================
    CAMADA 4 — Páginas públicas (portal do usuário)
