@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AtivoFix — API de Integração</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png" />
+  <link rel="icon" href="/static/favicon.ico" sizes="any" />
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #14181c; --surface: #1b2126; --border: #2a323a; --border-strong: #39434e;
+      --text: #e9edf0; --muted: #8f9aa4; --faint: #5c6670; --blue: #38bdf8; --blue-soft: rgba(56,189,248,.1);
+    }
+    body { font-family: Inter, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+    .top-bar { background: rgba(22,26,30,.95); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 40; }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-icon { width: 36px; height: 36px; background: #242b31; border: 1px solid var(--border); border-radius: 10px; display: flex; align-items: center; justify-content: center; padding: 3px; }
+    .brand-icon img { width: 100%; height: 100%; object-fit: contain; }
+    .brand-text { font-size: 19px; font-weight: 800; color: #f2f4f5; }
+    .brand-sub { font-size: 11px; color: var(--muted); }
+    .menu-wrap { position: relative; }
+    .menu-btn { background: #f2f4f5; color: #171b1f; border: none; padding: 10px 18px; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600; font-family: inherit; }
+    .menu-dropdown { display: none; position: absolute; right: 0; top: 100%; margin-top: 8px; background: #1b2126; border: 1px solid var(--border); border-radius: 12px; padding: 6px 0; min-width: 200px; z-index: 50; box-shadow: 0 12px 32px rgba(0,0,0,.45); }
+    .menu-dropdown.show { display: block; }
+    .menu-dropdown a { display: flex; padding: 11px 18px; color: var(--text); text-decoration: none; font-size: 13px; }
+    .menu-dropdown a:hover { background: #232a31; }
+    .menu-label { font-size: 10px; color: var(--faint); text-transform: uppercase; letter-spacing: 1px; padding: 10px 18px 4px; font-weight: 600; }
+    .content { max-width: 980px; margin: 0 auto; padding: 32px 24px 80px; }
+    h1 { font-size: 26px; font-weight: 800; letter-spacing: -.5px; }
+    .desc { color: var(--muted); font-size: 14px; margin: 6px 0 28px; line-height: 1.6; }
+    h2 { font-size: 18px; font-weight: 700; margin: 40px 0 12px; display: flex; align-items: center; gap: 10px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+    .code { font-family: "JetBrains Mono", Consolas, monospace; font-size: 12.5px; background: #14191e; border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; line-height: 1.7; color: #c9d4dc; white-space: pre; }
+    .code .c { color: #5c6670; } .code .k { color: var(--blue); } .code .s { color: #7dd3a8; } .code .m { color: #f0b86e; }
+    .method { display: inline-block; padding: 2px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; font-family: "JetBrains Mono", monospace; margin-right: 8px; }
+    .method.get { background: var(--blue-soft); color: var(--blue); }
+    .method.post { background: rgba(125,211,168,.12); color: #7dd3a8; }
+    .ep-title { font-family: "JetBrains Mono", monospace; font-size: 13.5px; font-weight: 600; margin-bottom: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; background: #1e242a; color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .4px; padding: 10px 12px; }
+    td { padding: 10px 12px; border-top: 1px solid var(--border); vertical-align: top; }
+    td code { font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--blue); }
+    .btn { background: #f2f4f5; color: #15191d; border: none; padding: 10px 18px; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600; font-family: inherit; }
+    .btn:hover { background: #fff; }
+    .btn-sec { background: #262e36; color: #dfe4e9; border: 1px solid var(--border-strong); }
+    .btn-sec:hover { background: #2d363f; }
+    .btn-danger { background: rgba(239,68,68,.1); color: #f87171; border: 1px solid rgba(239,68,68,.25); }
+    input, select { background: #141920; border: 1px solid var(--border-strong); color: var(--text); padding: 10px 12px; border-radius: 10px; font-size: 13px; font-family: inherit; }
+    input:focus, select:focus { outline: none; border-color: #2c6a94; box-shadow: 0 0 0 3px rgba(56,189,248,.14); }
+    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .key-reveal { background: #10233a; border: 1px solid rgba(56,189,248,.4); border-radius: 10px; padding: 14px 16px; margin-top: 12px; display: none; }
+    .key-reveal .code { border: none; background: transparent; padding: 0; margin: 0; }
+    .warn { font-size: 12.5px; color: #f0b86e; margin-top: 8px; }
+    .pill { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .pill.on { background: rgba(125,211,168,.12); color: #7dd3a8; }
+    .pill.off { background: rgba(239,68,68,.1); color: #f87171; }
+    .muted { color: var(--muted); font-size: 13px; }
+    .copy-ok { color: #7dd3a8; font-size: 12px; display: none; }
+    @media (max-width: 720px) { .content { padding: 20px 16px 60px; } .code { font-size: 11px; } }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <div class="brand">
+      <div class="brand-icon"><img src="/static/logo-icon.png" alt="AtivoFix" /></div>
+      <div><div class="brand-text">AtivoFix</div><div class="brand-sub">API de Integração v1</div></div>
+    </div>
+    <div class="menu-wrap">
+      <button class="menu-btn" onclick="document.getElementById('menuDrop').classList.toggle('show')">Menu</button>
+      <div class="menu-dropdown" id="menuDrop">
+        <div class="menu-label">Navegação</div>
+        <a href="/">Computadores</a>
+        <a href="/chamados">Chamados</a>
+        <a href="/api-docs" style="color:var(--blue)">API</a>
+        <hr style="border:none;border-top:1px solid var(--border);margin:4px 0">
+        <a href="/logout" style="color:#f87171">Sair</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+    <h1>API de Integração</h1>
+    <p class="desc">
+      Permita que o sistema da sua empresa consulte máquinas, unidades e chamados do AtivoFix — e abra chamados automaticamente.
+      Cada empresa tem a própria <b>chave de API</b>: ela só enxerga e age dentro da empresa dela. Nada de outras empresas é acessível.
+    </p>
+
+    <!-- ===== CHAVES ===== -->
+    <h2>🔑 Chaves de API</h2>
+    <div class="card">
+      <div class="row" style="margin-bottom:14px">
+        <input id="kName" placeholder="Nome da integração (ex: Sistema AHBB)" style="flex:1;min-width:200px" />
+        <select id="kTenant" style="min-width:180px"></select>
+        <button class="btn" onclick="createKey()">Gerar chave</button>
+      </div>
+      <table id="keysTable">
+        <thead><tr><th>Nome</th><th>Empresa</th><th>Chave</th><th>Último uso</th><th>Status</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="key-reveal" id="keyReveal">
+        <div class="muted" style="margin-bottom:6px"><b style="color:#f2f4f5">Copie agora — esta chave não será exibida novamente:</b></div>
+        <div class="code" id="keyRaw"></div>
+        <button class="btn btn-sec" style="margin-top:10px" onclick="copyKey()">Copiar chave</button>
+        <span class="copy-ok" id="copyOk">✓ copiada</span>
+      </div>
+      <div class="warn" id="noKeysWarn" style="display:none">⚠ Nenhuma chave criada. Gere a primeira acima.</div>
+    </div>
+
+    <!-- ===== COMO USAR ===== -->
+    <h2>📡 Como o sistema da empresa consome</h2>
+    <div class="card">
+      <p class="muted" style="margin-bottom:12px">Todas as requisições enviam a chave no header <code style="color:var(--blue)">X-API-KEY</code>. Exemplo real em 3 linguagens:</p>
+      <div class="code"><span class="c"># curl (teste rápido)</span>
+curl https://ativofix.com.br/api/v1/ping \
+  -H <span class="s">"X-API-KEY: afk_sua_chave_aqui"</span>
+
+<span class="c"># Python (sistema da empresa)</span>
+<span class="k">import</span> requests
+r = requests.get(<span class="s">"https://ativofix.com.br/api/v1/computers"</span>,
+    headers={<span class="s">"X-API-KEY"</span>: <span class="s">"afk_sua_chave_aqui"</span>})
+dados = r.json()   <span class="c"># {"total": 42, "computers": [...]}</span>
+
+<span class="c"># JavaScript / Node</span>
+<span class="k">const</span> r = <span class="k">await</span> fetch(<span class="s">"https://ativofix.com.br/api/v1/tickets?status=open"</span>, {
+  headers: { <span class="s">"X-API-KEY"</span>: <span class="s">"afk_sua_chave_aqui"</span> }
+});
+<span class="k">const</span> chamados = <span class="k">await</span> r.json();</div>
+    </div>
+
+    <!-- ===== ENDPOINTS ===== -->
+    <h2>📚 Endpoints</h2>
+
+    <div class="card">
+      <div class="ep-title"><span class="method get">GET</span>/api/v1/ping</div>
+      <p class="muted">Confirma que a chave é válida. Resposta: <code style="color:var(--blue)">{"ok": true, "tenant": "AHBB"}</code></p>
+    </div>
+
+    <div class="card">
+      <div class="ep-title"><span class="method get">GET</span>/api/v1/computers</div>
+      <p class="muted" style="margin-bottom:10px">Máquinas da empresa, com unidade/local e status online (reportou nos últimos 3 min).</p>
+      <table>
+        <thead><tr><th>Parâmetro</th><th>Valores</th><th>Descrição</th></tr></thead>
+        <tbody>
+          <tr><td><code>online</code></td><td><code>true</code> / <code>false</code></td><td>Filtrar por status</td></tr>
+          <tr><td><code>payload</code></td><td><code>true</code></td><td>Incluir hardware completo (CPU, RAM, discos)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="ep-title"><span class="method get">GET</span>/api/v1/units</div>
+      <p class="muted">Unidades da empresa com contagem de locais e máquinas.</p>
+    </div>
+
+    <div class="card">
+      <div class="ep-title"><span class="method get">GET</span>/api/v1/locations?unit_id=N</div>
+      <p class="muted">Locais, opcionalmente filtrados por unidade.</p>
+    </div>
+
+    <div class="card">
+      <div class="ep-title"><span class="method get">GET</span>/api/v1/tickets</div>
+      <p class="muted" style="margin-bottom:10px">Chamados da empresa, mais recentes primeiro.</p>
+      <table>
+        <thead><tr><th>Parâmetro</th><th>Exemplo</th><th>Descrição</th></tr></thead>
+        <tbody>
+          <tr><td><code>status</code></td><td><code>open</code>, <code>in_progress</code>, <code>resolved</code>, <code>closed</code></td><td>Status do chamado</td></tr>
+          <tr><td><code>from</code> / <code>to</code></td><td><code>2026-09-01</code></td><td>Período de criação</td></tr>
+          <tr><td><code>limit</code> / <code>offset</code></td><td><code>100</code> / <code>0</code></td><td>Paginação (máx 500)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="ep-title"><span class="method post">POST</span>/api/v1/tickets</div>
+      <p class="muted" style="margin-bottom:10px">Abre um chamado no AtivoFix pelo sistema da empresa. O chamado cai na unidade certa e notifica o T.I. dela.</p>
+      <div class="code">POST /api/v1/tickets
+X-API-KEY: afk_...
+
+{
+  <span class="s">"title"</span>: <span class="s">"Impressora nao imprime"</span>,
+  <span class="s">"description"</span>: <span class="s">"Triagem - impressora HP nao responde"</span>,
+  <span class="s">"priority"</span>: <span class="s">"high"</span>,              <span class="c">// low|medium|high|critical</span>
+  <span class="s">"unit_name"</span>: <span class="s">"HSL Garca"</span>,        <span class="c">// ou unit_id: 5</span>
+  <span class="s">"location_name"</span>: <span class="s">"triagem"</span>,      <span class="c">// opcional (ou location_id)</span>
+  <span class="s">"tag_evo"</span>: <span class="s">"EVO-XXXXXX"</span>,         <span class="c">// opcional: vincula a maquina</span>
+  <span class="s">"cpf"</span>: <span class="s">"000.000.000-00"</span>          <span class="c">// opcional</span>
+}</div>
+      <p class="muted" style="margin-top:10px">Resposta: <code style="color:var(--blue)">201 {"ok": true, "ticket_id": 123}</code> — valida unidade/local como pertencentes à empresa da chave (404 caso contrário).</p>
+    </div>
+
+    <!-- ===== SEGURANCA ===== -->
+    <h2>🛡️ Segurança</h2>
+    <div class="card">
+      <table>
+        <tbody>
+          <tr><td><b>Isolamento</b></td><td>A chave trava a consulta na empresa dela — impossível acessar dados de outras empresas</td></tr>
+          <tr><td><b>Armazenamento</b></td><td>Só o <b>hash</b> da chave fica no banco; a chave completa aparece uma única vez, na criação</td></tr>
+          <tr><td><b>Comparação</b></td><td>Tempo constante (imune a timing attack)</td></tr>
+          <tr><td><b>HTTPS</b></td><td>Tudo via TLS (Let's Encrypt) — a chave nunca trafega em texto plano</td></tr>
+          <tr><td><b>Revozocação</b></td><td>Desative ou exclua a chave a qualquer momento — efeito imediato</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+<script>
+function toggleMenu(){document.getElementById('menuDrop').classList.toggle('show')}
+document.addEventListener('click',function(e){var w=document.querySelector('.menu-wrap');if(w&&!w.contains(e.target))document.getElementById('menuDrop').classList.remove('show')});
+
+var tenants = [];
+var lastRaw = '';
+
+async function loadTenants(){
+  try { tenants = await (await fetch('/api/tenants')).json(); } catch(e) { tenants = []; }
+  var sel = document.getElementById('kTenant');
+  sel.innerHTML = '';
+  tenants.forEach(function(t){
+    var o = document.createElement('option');
+    o.value = t.tenant_id; o.textContent = t.name;
+    sel.appendChild(o);
+  });
+}
+
+async function loadKeys(){
+  var r = await fetch('/api/apikeys');
+  if(!r.ok){ return; }
+  var keys = await r.json();
+  var tb = document.querySelector('#keysTable tbody');
+  tb.innerHTML = '';
+  document.getElementById('noKeysWarn').style.display = keys.length ? 'none' : 'block';
+  keys.forEach(function(k){
+    var tr = document.createElement('tr');
+    var used = k.last_used_at ? k.last_used_at.slice(0,16).replace('T',' ') : 'nunca';
+    tr.innerHTML = '<td><b>'+esc(k.name||'')+'</b></td>'
+      + '<td>'+esc(k.tenant_name||k.tenant_id)+'</td>'
+      + '<td><code style="color:var(--blue)">'+esc(k.prefix)+'…</code></td>'
+      + '<td class="muted">'+used+'</td>'
+      + '<td><span class="pill '+(k.active?'on':'off')+'">'+(k.active?'ativa':'desativada')+'</span></td>'
+      + '<td style="text-align:right;white-space:nowrap">'
+      + '<button class="btn btn-sec" onclick="toggleKey('+k.key_id+')">'+(k.active?'Desativar':'Ativar')+'</button> '
+      + '<button class="btn btn-danger" onclick="deleteKey('+k.key_id+')">Excluir</button></td>';
+    tb.appendChild(tr);
+  });
+}
+
+function esc(s){ var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+async function createKey(){
+  var name = document.getElementById('kName').value.trim();
+  var tid = document.getElementById('kTenant').value;
+  if(!name){ alert('Dê um nome para a chave (ex: Sistema AHBB)'); return; }
+  var r = await fetch('/api/apikeys', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name: name, tenant_id: tid }) });
+  var j = await r.json();
+  if(!r.ok){ alert(j.error || 'Erro ao criar chave'); return; }
+  lastRaw = j.key;
+  var box = document.getElementById('keyReveal');
+  document.getElementById('keyRaw').textContent = j.key;
+  box.style.display = 'block';
+  document.getElementById('kName').value = '';
+  box.scrollIntoView({ behavior:'smooth', block:'center' });
+  await loadKeys();
+}
+
+function copyKey(){
+  if(!lastRaw) return;
+  navigator.clipboard.writeText(lastRaw).then(function(){
+    var ok = document.getElementById('copyOk');
+    ok.style.display = 'inline';
+    setTimeout(function(){ ok.style.display = 'none'; }, 2000);
+  });
+}
+
+async function toggleKey(id){
+  await fetch('/api/apikeys/'+id+'/toggle', { method:'POST' });
+  await loadKeys();
+}
+
+async function deleteKey(id){
+  if(!confirm('Excluir esta chave? O sistema que a usa perderá acesso imediatamente.')) return;
+  await fetch('/api/apikeys/'+id, { method:'DELETE' });
+  await loadKeys();
+}
+
+loadTenants().then(loadKeys);
+</script>
+</body>
+</html>
