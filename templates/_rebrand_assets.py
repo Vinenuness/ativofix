@@ -135,6 +135,13 @@ def main():
     flat.alpha_composite(ink_r, ((SIDE - ink_side) // 2, (SIDE - ink_side) // 2))
     flat.resize((180, 180), Image.LANCZOS).save(os.path.join(STATIC, "apple-touch-icon.png"))
 
+    # 5) icone do agente Windows (mesmo tile do favicon, multi-tamanho)
+    tile.save(
+        os.path.join(HERE, "agent.ico"),
+        sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)],
+    )
+    print("agent.ico:", os.path.getsize(os.path.join(HERE, "agent.ico")), "bytes")
+
     for f in ("logo-icon.png", "logo.png", "logo-dark.png", "favicon.ico", "favicon-32.png", "apple-touch-icon.png"):
         p = os.path.join(STATIC, f)
         im = Image.open(p)
