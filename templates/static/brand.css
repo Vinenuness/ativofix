@@ -116,3 +116,167 @@ input:focus, select:focus, textarea:focus {
 
 /* Seleção de texto */
 ::selection { background: rgba(159,179,192,0.28); }
+
+/* ============================================================
+   CAMADA 2 — Neutralização final do verde-água e polimento
+   ============================================================ */
+
+:root {
+  --af-accent: #9fb3c0;
+  --af-accent-soft: rgba(159,179,192,0.12);
+  --af-teal: #2dd4bf; /* cor legada a neutralizar */
+}
+
+/* Substituição global do teal legado por aço neutro */
+.tag-badge,
+.brand-icon,
+.menu-dropdown a,
+.menu-dropdown a:hover,
+.btn-danger:hover {
+  color: var(--af-accent) !important;
+}
+.brand-icon { background: #242b31 !important; }
+.brand-icon svg { color: var(--af-accent) !important; }
+
+/* Bordas e anéis de foco ainda teal → neutros */
+.search-input, .form-input, .form-select, .textarea {
+  border-color: var(--af-border) !important;
+}
+.search-input:focus, .form-input:focus {
+  border-color: #4d5a64 !important;
+  box-shadow: 0 0 0 3px var(--af-focus) !important;
+}
+
+/* Sombras coloridas → neutras */
+.menu-btn, .btn-primary {
+  box-shadow: 0 1px 2px rgba(0,0,0,0.35) !important;
+}
+
+/* Raios de canto coerentes: cards/modais 12px, inputs/botões 10px, chips 8px */
+.card, .modalBox, .login-card, .panel { border-radius: 12px !important; }
+.btn, .btn-primary, .menu-btn, .search-input, .form-input,
+.form-select, .textarea, input, select, textarea { border-radius: 10px !important; }
+.stat-chip, .menu-dropdown { border-radius: 10px !important; }
+.tag-badge { border-radius: 5px !important; }
+
+/* Top bar: menos blur, borda mais firme */
+.top-bar {
+  backdrop-filter: blur(8px) !important;
+  border-bottom: 1px solid var(--af-border) !important;
+}
+
+/* Chips de estatística: superfície sólida e número destacado */
+.stat-chip {
+  background: var(--af-surface) !important;
+  border: 1px solid var(--af-border) !important;
+  color: var(--af-muted) !important;
+}
+.stat-chip .num { color: #f2f4f5 !important; font-variant-numeric: tabular-nums; }
+
+/* Dropdown do menu: borda e item mais definidos */
+.menu-dropdown {
+  background: var(--af-surface) !important;
+  border: 1px solid var(--af-border) !important;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.45) !important;
+}
+.menu-dropdown a:hover { background: #232a31 !important; }
+
+/* Badges de status (verde/vermelho/amarelo) mais discretos */
+.status-badge, .badge,
+[class*="status-"] {
+  font-weight: 600 !important;
+}
+
+/* Tabelas: cabeçalho menos contrastado, linha com hover sutil */
+th {
+  background: #1e242a !important;
+  color: var(--af-muted) !important;
+  font-size: 11.5px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+tr:hover td { background: rgba(255,255,255,0.015) !important; }
+
+/* ============================================================
+   CAMADA 3 — Chamados/KPIs: último resquício de cores vivas
+   ============================================================ */
+
+/* Números de KPI: aço em vez de teal; destaque só no peso */
+.kpi-num, .num {
+  color: #e9edf0 !important;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Botão Relatório PDF: neutro sólido como o primário */
+.btn-report {
+  background: #262e36 !important;
+  color: #dfe4e9 !important;
+  border: 1px solid var(--af-border-strong, #39434e) !important;
+  box-shadow: none !important;
+}
+.btn-report:hover { background: #2d363f !important; transform: none !important; }
+
+/* Botão Novo Chamado: primário claro, não verde-esmeralda */
+.btn-new {
+  background: #f2f4f5 !important;
+  color: #15191d !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.35) !important;
+}
+.btn-new:hover { background: #ffffff !important; transform: none !important; box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important; }
+
+/* Card de chamado: borda neutra, hover discreto (sem teal) */
+.ticket-card,
+.ticket-card:hover {
+  border-color: var(--af-border) !important;
+  box-shadow: none !important;
+}
+.ticket-card:hover { background: rgba(255,255,255,0.012) !important; }
+
+/* Filtro ativo: contorno neutro em vez de teal */
+.filter-pill.active, .active {
+  border-color: #4d5a64 !important;
+  color: #e9edf0 !important;
+  background: var(--af-accent-soft, rgba(159,179,192,0.12)) !important;
+}
+
+/* Ações "Iniciar" e ponto do histórico: aço neutro */
+.btn-start {
+  background: var(--af-accent-soft, rgba(159,179,192,0.12)) !important;
+  color: #c3cdd5 !important;
+}
+.history-dot { background: #6b7681 !important; }
+
+/* ============================================================
+   CAMADA 4 — Páginas públicas (portal do usuário)
+   ============================================================ */
+
+/* Botão genérico dos portais: sólido claro (era gradiente teal) */
+.btn {
+  background: #f2f4f5 !important;
+  color: #15191d !important;
+  border: none !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.35) !important;
+  font-weight: 600 !important;
+}
+.btn:hover { background: #ffffff !important; color: #15191d !important; transform: none !important; }
+.btn:disabled { opacity: 0.5; }
+
+/* Caixa do logo nos portais: tile carvão (era gradiente teal + glow) */
+.logo {
+  background: #242b31 !important;
+  border: 1px solid var(--af-border);
+  box-shadow: none !important;
+}
+
+/* Links de anexo: aço em vez de teal inline */
+.att-item a, .ticket-item a { color: var(--af-steel) !important; }
+
+/* Cartões dos portais: raio coerente */
+.ticket-item { border-radius: 10px !important; }
+
+/* Resolução do chamado: faixa discreta, não verde-brilhante */
+.resolucao-box, .resolution-box {
+  background: rgba(110,231,183,0.05) !important;
+  border: 1px solid rgba(110,231,183,0.14) !important;
+  color: #b6e3cd !important;
+}

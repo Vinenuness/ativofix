@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AtivoFix - Login</title>
-<link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png" />
+  <title>AtivoFix — Entrar</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png" />
   <link rel="icon" href="/static/favicon.ico" sizes="any" />
   <link rel="apple-touch-icon" href="/static/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,57 +12,283 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; background: linear-gradient(135deg, #16191d 0%, #1d2227 50%, #1b2024 100%); color: #e4e8ea; display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; }
-    .bg-grid { position: fixed; inset: 0; background-image: linear-gradient(rgba(45,212,191,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(45,212,191,0.03) 1px, transparent 1px); background-size: 50px 50px; pointer-events: none; }
-    .bg-glow { position: fixed; width: 600px; height: 600px; border-radius: 50%; filter: blur(120px); opacity: 0.15; pointer-events: none; }
-    .bg-glow-1 { top: -200px; left: -100px; background: #2dd4bf; }
-    .bg-glow-2 { bottom: -200px; right: -100px; background: #2dd4bf; }
-    .login-container { position: relative; z-index: 1; width: 100%; max-width: 440px; padding: 20px; }
-    .logo-section { text-align: center; margin-bottom: 32px; }
-    .logo-icon { width: 72px; height: 72px; margin: 0 auto 16px; background: linear-gradient(135deg, #2dd4bf, #2dd4bf); border-radius: 18px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 32px rgba(45,212,191,0.3); }
-    .logo-icon svg { width: 40px; height: 40px; color: white; }
-    .logo-title { font-size: 32px; font-weight: 800; background: linear-gradient(135deg, #2dd4bf, #2dd4bf); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.5px; }
-    .logo-subtitle { font-size: 14px; color: #8b949b; margin-top: 6px; font-weight: 500; }
-    .login-card { background: rgba(22,26,30,0.8); backdrop-filter: blur(20px); border: 1px solid rgba(49,58,65,0.5); border-radius: 20px; padding: 32px; box-shadow: 0 25px 50px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05); }
-    .form-header { margin-bottom: 24px; }
-    .form-header h2 { font-size: 20px; font-weight: 700; color: #f7f8f9; margin-bottom: 4px; }
-    .form-header p { font-size: 13px; color: #8b949b; }
-    .input-group { margin-bottom: 16px; }
-    .input-group label { display: block; font-size: 12px; font-weight: 600; color: #a5adb3; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .input-wrapper { position: relative; }
-    .input-wrapper svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: #3d474e; pointer-events: none; }
-    .input-wrapper input { width: 100%; padding: 14px 14px 14px 44px; border-radius: 12px; border: 1px solid rgba(49,58,65,0.5); background: rgba(22,26,30,0.6); color: #f7f8f9; font-size: 14px; font-family: inherit; transition: all 0.2s ease; }
-    .input-wrapper input:focus { outline: none; border-color: #2dd4bf; box-shadow: 0 0 0 3px rgba(45,212,191,0.15); }
-    .input-wrapper input::placeholder { color: #3d474e; }
-    .login-btn { width: 100%; padding: 14px; border: none; border-radius: 12px; background: linear-gradient(135deg, #2dd4bf, #2dd4bf); color: white; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer; margin-top: 8px; transition: all 0.2s ease; box-shadow: 0 4px 16px rgba(45,212,191,0.3); }
-    .login-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(45,212,191,0.4); }
-    .error-msg { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; padding: 12px 16px; border-radius: 10px; font-size: 13px; margin-top: 16px; display: flex; align-items: center; gap: 8px; }
-    .footer-links { text-align: center; margin-top: 24px; font-size: 12px; color: #3d474e; }
-    .footer-links a { color: #2dd4bf; text-decoration: none; font-weight: 500; }
-    .version { text-align: center; margin-top: 24px; font-size: 11px; color: #313a41; }
+    :root {
+      --bg: #101418;
+      --panel: #161b20;
+      --card: #1b2127;
+      --border: #29313a;
+      --border-strong: #39434e;
+      --text: #e9edf0;
+      --muted: #8f9aa4;
+      --faint: #5c6670;
+      --steel: #9fb3c0;
+    }
+    body {
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: stretch;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ---------- Lado esquerdo: identidade ---------- */
+    .brand-side {
+      flex: 1 1 52%;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 56px 64px;
+      background:
+        radial-gradient(900px 500px at -10% 110%, rgba(159,179,192,0.07), transparent 60%),
+        linear-gradient(160deg, #12161a 0%, #171d23 100%);
+      overflow: hidden;
+    }
+    .brand-side::before {
+      content: "";
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: radial-gradient(ellipse 90% 80% at 30% 40%, black 30%, transparent 75%);
+      -webkit-mask-image: radial-gradient(ellipse 90% 80% at 30% 40%, black 30%, transparent 75%);
+      pointer-events: none;
+    }
+    .brand-lockup { position: relative; z-index: 1; }
+    .brand-lockup img { width: 240px; max-width: 60%; display: block; }
+    .brand-lockup .tagline {
+      margin-top: 14px;
+      font-size: 13px;
+      color: var(--muted);
+      letter-spacing: 0.2px;
+    }
+
+    .pitch { position: relative; z-index: 1; max-width: 480px; }
+    .pitch h1 {
+      font-size: clamp(26px, 3vw, 38px);
+      font-weight: 700;
+      letter-spacing: -0.8px;
+      line-height: 1.15;
+      color: #f4f6f8;
+    }
+    .pitch h1 span { color: var(--steel); }
+    .pitch p {
+      margin-top: 14px;
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+    .pitch-points { margin-top: 34px; display: grid; gap: 16px; }
+    .pitch-point { display: flex; gap: 14px; align-items: flex-start; }
+    .pitch-point .ico {
+      flex: 0 0 34px; height: 34px;
+      border: 1px solid var(--border-strong);
+      border-radius: 9px;
+      background: rgba(255,255,255,0.03);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pitch-point .ico svg { width: 16px; height: 16px; color: var(--steel); }
+    .pitch-point b { display: block; font-size: 14px; font-weight: 600; color: #dfe4e9; }
+    .pitch-point small { display: block; margin-top: 2px; font-size: 12.5px; color: var(--faint); line-height: 1.5; }
+
+    .brand-foot {
+      position: relative; z-index: 1;
+      font-size: 12px; color: var(--faint);
+      display: flex; gap: 18px; align-items: center;
+    }
+    .brand-foot .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--faint); }
+
+    /* ---------- Lado direito: formulário ---------- */
+    .form-side {
+      flex: 1 1 48%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 32px;
+      background: var(--panel);
+      border-left: 1px solid var(--border);
+    }
+    .form-wrap { width: 100%; max-width: 400px; }
+    .form-head { margin-bottom: 30px; }
+    .form-head h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.4px; }
+    .form-head p { margin-top: 6px; font-size: 13.5px; color: var(--muted); }
+
+    .field { margin-bottom: 16px; }
+    .field label {
+      display: block;
+      font-size: 12px; font-weight: 600;
+      color: #aab4bd;
+      margin-bottom: 7px;
+      letter-spacing: 0.3px;
+    }
+    .field .in { position: relative; }
+    .field .in svg {
+      position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+      width: 17px; height: 17px; color: var(--faint); pointer-events: none;
+    }
+    .field input {
+      width: 100%;
+      padding: 13px 14px 13px 42px;
+      border-radius: 10px;
+      border: 1px solid var(--border-strong);
+      background: #141920;
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+    .field input::placeholder { color: var(--faint); }
+    .field input:focus {
+      outline: none;
+      border-color: #56636e;
+      box-shadow: 0 0 0 3px rgba(159,179,192,0.13);
+    }
+
+    .submit-btn {
+      width: 100%;
+      margin-top: 6px;
+      padding: 13px;
+      border: none;
+      border-radius: 10px;
+      background: #f2f4f5;
+      color: #15191d;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background .15s ease, box-shadow .15s ease;
+    }
+    .submit-btn:hover { background: #ffffff; box-shadow: 0 2px 12px rgba(0,0,0,0.35); }
+    .submit-btn:active { background: #dde2e6; }
+
+    .aux-row {
+      margin-top: 18px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--faint);
+    }
+    .aux-row a { color: var(--steel); text-decoration: none; font-weight: 500; }
+    .aux-row a:hover { text-decoration: underline; }
+
+    .error-msg {
+      margin-top: 16px;
+      padding: 11px 14px;
+      border-radius: 9px;
+      border: 1px solid rgba(239,68,68,0.35);
+      background: rgba(239,68,68,0.08);
+      color: #f5b0b0;
+      font-size: 13px;
+    }
+
+    .portal-hint {
+      margin-top: 26px;
+      padding: 13px 15px;
+      border-radius: 10px;
+      border: 1px dashed var(--border-strong);
+      font-size: 12.5px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .portal-hint a { color: var(--steel); font-weight: 600; text-decoration: none; }
+    .portal-hint a:hover { text-decoration: underline; }
+
+    .mobile-logo { display: none; }
+
+    /* ---------- Responsivo: empilha ---------- */
+    @media (max-width: 880px) {
+      body { flex-direction: column; }
+      .brand-side { display: none; }
+      .form-side { border-left: none; flex: 1; }
+      .mobile-logo {
+        display: block;
+        text-align: center;
+        margin-bottom: 28px;
+      }
+      .mobile-logo img { width: 190px; }
+      .mobile-logo p { margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+    }
+
+    .version {
+      margin-top: 30px;
+      text-align: center;
+      font-size: 11px;
+      color: #454e57;
+    }
   </style>
 </head>
 <body>
-  <div class="bg-grid"></div>
-  <div class="bg-glow bg-glow-1"></div>
-  <div class="bg-glow bg-glow-2"></div>
-  <div class="login-container">
-    <div class="logo-section">
-      <img src="/static/logo.png" alt="AtivoFix" style="max-width:260px;width:100%" />
-  <link rel="stylesheet" href="/static/brand.css" />
-      <div class="logo-subtitle">Sistema de Gestão de Inventário de TI</div>
+  <!-- Lado esquerdo (desktop): identidade -->
+  <aside class="brand-side">
+    <div class="brand-lockup">
+      <img src="/static/logo.png" alt="AtivoFix" />
+      <div class="tagline">Gestão de inventário e chamados de TI</div>
     </div>
-    <div class="login-card">
-      <div class="form-header"><h2>Bem-vindo de volta</h2><p>Entre com suas credenciais para acessar o painel</p></div>
+
+    <div class="pitch">
+      <h1>Todo o parque de TI da sua empresa,<br /><span>em um só painel.</span></h1>
+      <p>Inventário automatizado dos equipamentos, chamados organizados por unidade e relatórios prontos para a diretoria.</p>
+      <div class="pitch-points">
+        <div class="pitch-point">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="9" y="9" width="6" height="6"></rect><path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3"></path></svg></div>
+          <div><b>Inventário automático</b><small>Hardware, software e status de cada máquina, sempre atualizados.</small></div>
+        </div>
+        <div class="pitch-point">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 6 16 12l6 6"></path><rect x="2" y="4" width="14" height="16" rx="2"></rect></svg></div>
+          <div><b>Chamados por unidade</b><small>Cada solicitação chega ao técnico certo, com histórico e SLA.</small></div>
+        </div>
+        <div class="pitch-point">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="m7 14 4-4 4 3 5-6"></path></svg></div>
+          <div><b>Relatórios em PDF</b><small>Inventário e atendimentos por período, unidade e empresa.</small></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="brand-foot">
+      <span>AtivoFix</span><span class="dot"></span><span>Multiempresa</span><span class="dot"></span><span>ativofix.com.br</span>
+    </div>
+  </aside>
+
+  <!-- Lado direito: login -->
+  <main class="form-side">
+    <div class="form-wrap">
+      <div class="mobile-logo">
+        <img src="/static/logo.png" alt="AtivoFix" />
+        <p>Gestão de inventário e chamados de TI</p>
+      </div>
+      <div class="form-head">
+        <h2>Acessar o painel</h2>
+        <p>Entre com suas credenciais para continuar</p>
+      </div>
       <form method="POST" action="/login">
-        <div class="input-group"><label>Usuario</label><div class="input-wrapper"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><input name="username" type="text" placeholder="seu.usuario" required autocomplete="username" /></div></div>
-        <div class="input-group"><label>Senha</label><div class="input-wrapper"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg><input name="password" type="password" placeholder="Digite sua senha" required autocomplete="current-password" /></div></div>
-        <button type="submit" class="login-btn">Entrar no Painel</button>
+        <div class="field">
+          <label>Usuário ou e-mail</label>
+          <div class="in">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            <input name="username" type="text" placeholder="seu.usuario" required autocomplete="username" />
+          </div>
+        </div>
+        <div class="field">
+          <label>Senha</label>
+          <div class="in">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            <input name="password" type="password" placeholder="Digite sua senha" required autocomplete="current-password" />
+          </div>
+        </div>
+        <button type="submit" class="submit-btn">Entrar</button>
       </form>
       {% if error %}<div class="error-msg">{{ error }}</div>{% endif %}
-      <div class="footer-links"><a href="/forgot-password">Esqueci minha senha</a></div>
+      <div class="aux-row"><a href="/forgot-password">Esqueci minha senha</a></div>
+
+      <div class="portal-hint">
+        Precisa abrir uma solicitação de atendimento?<br />
+        Use o <a href="/abrir-chamado">Portal do Usuário</a> — não precisa de login.
+      </div>
+
+      <div class="version">AtivoFix v2.0 — Gestão Inteligente de Inventário</div>
     </div>
-    <div class="version">AtivoFix v2.0 - Gestao Inteligente de Inventario</div>
-  </div>
+  </main>
 </body>
 </html>
