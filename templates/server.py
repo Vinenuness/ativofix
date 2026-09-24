@@ -1495,14 +1495,15 @@ def api_agent():
             except Exception:
                 pass
         # tenant do PC: mantem o do registro existente; PC novo herda o tenant de outro PC
-        # ja vinculado `a mesma TAG (mesma empresa) ou fica no tenant padrao 1
+        # ja vinculado a mesma TAG (mesma empresa) ou nasce na empresa padrao do painel
+        # (PANEL_TENANT_ID) para aparecer imediatamente no painel do tecnico
         existing_tid = conn.execute("SELECT tenant_id FROM computers WHERE agent_id = ?", (agent_id,)).fetchone()
         if existing_tid:
             tid = existing_tid["tenant_id"]
         else:
-            tid = 1
+            tid = MASTER_TENANT_ID
             if tag_evo:
-                _t = conn.execute("SELECT tenant_id FROM computers WHERE tag_evo = ? AND tenant_id != 1 LIMIT 1", (tag_evo,)).fetchone()
+                _t = conn.execute("SELECT tenant_id FROM computers WHERE tag_evo = ? AND tenant_id != ? LIMIT 1", (tag_evo, MASTER_TENANT_ID)).fetchone()
                 if _t:
                     tid = _t["tenant_id"]
         conn.execute("INSERT INTO computers (agent_id, device_uid, hostname, alias, tag_evo, last_seen, payload_json, tenant_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(agent_id) DO UPDATE SET device_uid=excluded.device_uid, hostname=excluded.hostname, alias=coalesce(excluded.alias, computers.alias), tag_evo=computers.tag_evo, last_seen=excluded.last_seen, payload_json=excluded.payload_json", (agent_id, device_uid, hostname, alias, tag_evo, now, payload_json, tid))
