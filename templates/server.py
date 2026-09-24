@@ -1219,7 +1219,8 @@ def scripts_page():
 @app.route("/detalhe/<agent_id>")
 @require_login
 def detalhe(agent_id):
-    return render_template("detalhe.html", agent_id=agent_id)
+    # Rota legada: a tela de detalhe agora e servida por /pc/<agent_id>
+    return redirect(f"/pc/{agent_id}")
 
 
 @app.route("/pc/<agent_id>")
@@ -2225,6 +2226,38 @@ def api_computers_orphans():
                ORDER BY last_seen DESC LIMIT 50"""
         ).fetchall()
     return jsonify({"computers": [dict(r) for r in rows]})
+
+
+@app.route("/api/computers/<agent_id>/tag", methods=["POST"])
+@require_login
+def api_computer_set_tag(agent_id):
+    """Edita a TAG/etiqueta do computador pelo painel (mesma regra de herdanca do bind do agente)."""
+    role, unit_ids = current_user_access()
+    if role == "tech":
+        return jsonify({"error": "somente admins podem alterar a TAG"}), 403
+    if role != "master" and not computer_in_scope(agent_id):
+        return jsonify({"error": "sem acesso a este computador"}), 403
+    data = request.get_json(silent=True) or {}
+    tag_evo = norm_tag(data.get("tag_evo"))
+    if not is_valid_tag(tag_evo):
+        return jsonify({"error": "TAG invalida. Formato: EVO-XXXX (2 a 20 caracteres apos o prefixo)"}), 400
+    with get_db() as conn:
+        row = conn.execute("SELECT tag_evo FROM computers WHERE agent_id = ?", (agent_id,)).fetchone()
+        if not row:
+            return jsonify({"error": "not found"}), 404
+        old_tag = row["tag_evo"]
+        conn.execute("UPDATE computers SET tag_evo = ? WHERE agent_id = ?", (tag_evo, agent_id))
+        # TAG ja usada por outro PC de outra empresa -> este PC herda a empresa dela
+        _t = conn.execute(
+            "SELECT tenant_id FROM computers WHERE tag_evo = ? AND agent_id != ? AND tenant_id != 1 LIMIT 1",
+            (tag_evo, agent_id)
+        ).fetchone()
+        if _t:
+            conn.execute("UPDATE computers SET tenant_id = ? WHERE agent_id = ?", (_t["tenant_id"], agent_id))
+        conn.commit()
+    log_computer_change(agent_id, "TAG alterada", f"{old_tag or '(vazia)'} -> {tag_evo}")
+    logger.info(f"TAG do PC {agent_id} alterada: {old_tag} -> {tag_evo}")
+    return jsonify({"ok": True, "tag_evo": tag_evo})
 
 
 # ================================

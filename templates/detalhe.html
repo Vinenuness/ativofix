@@ -41,6 +41,7 @@
       <div class="brand-icon" style="background:#293237;display:flex;align-items:center;justify-content:center;padding:4px;flex-shrink:0;width:34px;height:34px;border-radius:9px"><img src="/static/logo-icon.png?v=20260921b" alt="AtivoFix" style="width:100%;height:100%;object-fit:contain" /></div><a href="/">← Voltar</a>
 
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <button class="btn" onclick="openTagModal()">Editar TAG</button>
         <button class="btn" onclick="openScriptModal()">Executar Script (.bat)</button>
         <a class="btn" href="/etiqueta/{{ pc.get('_agent_id','') }}">Etiqueta QR</a>
 
@@ -57,7 +58,7 @@
 
     <div class="muted">
       Último envio: {{ pc.get('_last_seen','N/A') }} •
-      TAG: <span class="pill">{{ pc.get('_tag_evo') or "N/A" }}</span> •
+      TAG: <span class="pill" id="tagPill" style="cursor:pointer" onclick="openTagModal()" title="Clique para editar">{{ pc.get('_tag_evo') or "N/A" }}</span> •
       Device UID: <span class="pill">{{ pc.get('_device_uid') or "N/A" }}</span>
     </div>
 
@@ -200,6 +201,19 @@
     <pre>{{ pc | tojson(indent=2) }}</pre>
   </div>
 
+  <!-- MODAL EDIÇÃO DE TAG -->
+  <div id="tagModal" class="modal" onclick="closeTagModal()">
+    <div class="modalBox" style="max-width:440px" onclick="event.stopPropagation()">
+      <h3 class="modalTitle">Editar TAG</h3>
+      <div class="muted" style="margin-bottom:12px">Etiqueta do equipamento (formato EVO-XXXX). Se a TAG já pertencer a outro computador de uma empresa, este PC passa a pertencer a essa empresa.</div>
+      <input id="tagInput" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid #313a41;background:#12161a;color:#e4e8ea;font-size:14px" placeholder="Ex: EVO-0425" maxlength="24" />
+      <div class="modalActions">
+        <button class="btn" onclick="closeTagModal()">Cancelar</button>
+        <button class="btn" onclick="saveTag()">Salvar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL EXECUÇÃO DE SCRIPT -->
   <div id="scriptModal" class="modal" onclick="closeScriptModal()">
     <div class="modalBox" onclick="event.stopPropagation()">
@@ -221,6 +235,28 @@
 
   <script>
     const DEVICE_UID = "{{ pc.get('_device_uid') or '' }}";
+    const AGENT_ID = "{{ pc.get('_agent_id','') }}";
+
+    function openTagModal(){
+      const cur = document.getElementById("tagPill").textContent.trim();
+      document.getElementById("tagInput").value = (cur && cur !== "N/A") ? cur : "";
+      document.getElementById("tagModal").style.display = "flex";
+      setTimeout(()=>document.getElementById("tagInput").focus(), 50);
+    }
+    function closeTagModal(){ document.getElementById("tagModal").style.display = "none"; }
+    async function saveTag(){
+      const tag = document.getElementById("tagInput").value.trim().toUpperCase();
+      if(!tag){ alert("Digite a TAG."); return; }
+      const res = await fetch(`/api/computers/${encodeURIComponent(AGENT_ID)}/tag`, {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ tag_evo: tag })
+      });
+      const data = await res.json().catch(()=>({}));
+      if(!res.ok){ alert(data.error || "Erro ao salvar TAG"); return; }
+      closeTagModal();
+      location.reload();
+    }
 
     function openScriptModal(){
       if(!DEVICE_UID){
