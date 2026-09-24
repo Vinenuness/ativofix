@@ -600,8 +600,11 @@ def backup_db():
         backups = sorted([f for f in os.listdir(DB_BACKUP_DIR) if f.endswith('.sqlite3')])
         while len(backups) > 10:
             old = backups.pop(0)
-            os.remove(os.path.join(DB_BACKUP_DIR, old))
-            logger.info(f"Backup antigo removido: {old}")
+            try:
+                os.remove(os.path.join(DB_BACKUP_DIR, old))
+                logger.info(f"Backup antigo removido: {old}")
+            except FileNotFoundError:
+                pass  # outro worker ja removeu (corrida entre workers do gunicorn)
         
         logger.info(f"Backup criado: {backup_path}")
         return backup_path
