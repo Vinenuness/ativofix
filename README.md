@@ -50,6 +50,46 @@ O **AtivoFix** resolve isso de ponta a ponta:
 
 ## 📸 Demonstração
 
+### 🖥️ Inventário — PCs cadastrados
+
+<p align="center">
+  <img src="assets/screenshots/inventario.png" alt="Painel de inventário com os PCs cadastrados" width="100%">
+</p>
+
+<p align="center">
+  <em>Onde cada máquina fica cadastrada: status online/offline em tempo real, TAG, usuário e ações administrativas.</em>
+</p>
+
+### 📄 Relatório de PCs por unidade
+
+<p align="center">
+  <img src="assets/screenshots/relatorio-por-unidade.png" alt="Relatório PDF de PCs por unidade" width="100%">
+</p>
+
+<p align="center">
+  <em>PDF gerado no servidor com a marca do cliente: total de PCs e unidades, com quantidade e percentual por unidade.</em>
+</p>
+
+### 🎫 Portal — abrir chamado
+
+<p align="center">
+  <img src="assets/screenshots/abrir-chamado.png" alt="Portal para abertura de chamados" width="100%">
+</p>
+
+<p align="center">
+  <em>Sem login: o usuário informa empresa, unidade, descrição, prioridade e anexa fotos ou prints do problema.</em>
+</p>
+
+### 👥 Criação de usuários
+
+<p align="center">
+  <img src="assets/screenshots/novo-usuario.png" alt="Criação de novo usuário" width="100%">
+</p>
+
+<p align="center">
+  <em>Cadastro com perfil de acesso, unidade, permissões de scripts/jobs e notificações por e-mail.</em>
+</p>
+
 ### 🔐 Login
 
 <p align="center">
@@ -57,67 +97,17 @@ O **AtivoFix** resolve isso de ponta a ponta:
 </p>
 
 <p align="center">
-  <em>Identidade visual própria, com design system global aplicado a todas as 25+ telas.</em>
+  <em>Identidade visual própria, com design system global aplicado a todas as telas do painel.</em>
 </p>
 
-### 🖥️ Painel de inventário
+### 🤖 O que o agente Python coleta
 
 <p align="center">
-  <img src="assets/screenshots/inventario.png" alt="Painel de inventário" width="100%">
-</p>
-
-<p align="center">
-  <em>Cada máquina com status online/offline em tempo real, TAG, usuário e ações administrativas.</em>
-</p>
-
-### 🔍 Detalhes do ativo
-
-<p align="center">
-  <img src="assets/screenshots/detalhes-ativo.png" alt="Detalhes do computador" width="100%">
+  <img src="assets/screenshots/detalhes-ativo.png" alt="Informações coletadas pelo agente Windows" width="100%">
 </p>
 
 <p align="center">
-  <em>Ficha completa por máquina: SO, CPU, RAM, armazenamento, GPU, monitores, programas instalados, IP, MAC e identificadores — tudo coletado pelo agente, sem intervenção humana.</em>
-</p>
-
-### 🎫 Gestão de chamados
-
-<p align="center">
-  <img src="assets/screenshots/chamados.png" alt="Gestão de chamados" width="100%">
-</p>
-
-<p align="center">
-  <em>Ciclo completo de atendimento: abertura, prioridade, status, histórico, anexos e resolução.</em>
-</p>
-
-### 📨 Portal do usuário
-
-<p align="center">
-  <img src="assets/screenshots/abrir-chamado.png" alt="Portal para abertura de chamados" width="70%">
-</p>
-
-<p align="center">
-  <em>Usuário final abre chamado sem login, escolhendo empresa → unidade → local em cascata.</em>
-</p>
-
-### 👥 Controle de usuários
-
-<p align="center">
-  <img src="assets/screenshots/usuarios.png" alt="Cadastro de usuários" width="70%">
-</p>
-
-<p align="center">
-  <em>Usuários, empresas, unidades e permissões com escopo hierárquico por papel.</em>
-</p>
-
-### 📄 Relatórios
-
-<p align="center">
-  <img src="assets/screenshots/relatorio-inventario.png" alt="Relatório de inventário por unidade" width="75%">
-</p>
-
-<p align="center">
-  <em>PDF gerado no servidor com a marca do cliente e filtros por período e unidade.</em>
+  <em>Ficha completa de cada máquina: SO, CPU, RAM, discos, GPU, monitores, IP, MAC, programas instalados e identificadores — tudo coletado automaticamente pelo agente.</em>
 </p>
 
 ---
