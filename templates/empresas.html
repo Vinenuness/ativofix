@@ -29,9 +29,14 @@ a{color:#e4e8ea;text-decoration:none}
 .form-group{margin-bottom:16px}
 .form-group label{display:block;margin-bottom:6px;font-size:13px;color:#a5adb3;font-weight:500}
 .form-group input,.form-group textarea{width:100%;box-sizing:border-box;padding:12px 14px;border-radius:10px;border:1px solid #313a41;background:#12161a;color:#e4e8ea;font-size:14px}
-.form-group input:focus,.form-group textarea:focus{border-color:#0d9488;outline:none}</style></head><body><div class=top><div class=left><a href=/>&#8592; Voltar</a><h1>Empresas</h1><div class=small id=count></div></div>
+.form-group input:focus,.form-group textarea:focus{border-color:#0d9488;outline:none}</style></head><body><div class=top><div class=left><div class="brand-icon" style="background:#293237;display:flex;align-items:center;justify-content:center;padding:4px;flex-shrink:0;width:34px;height:34px;border-radius:9px"><img src="/static/logo-icon.png?v=20260921b" alt="AtivoFix" style="width:100%;height:100%;object-fit:contain" /></div><a href=/>&#8592; Voltar</a><h1>Empresas</h1><div class=small id=count></div></div>
 <button class="btn btn-primary" onclick="openCreateModal()">+ Nova Empresa</button></div>
 <div id=grid class=grid></div>
+<div id=orphanBox style="display:none;margin-top:22px;background:#232a30;border:1px solid #4a3b1e;border-radius:14px;padding:16px">
+  <div style="font-weight:800;color:#fbbf24;font-size:15px;margin-bottom:4px">&#9888; PCs aguardando vínculo</div>
+  <div class=small style="margin-bottom:10px">Máquinas que reportaram inventário mas ainda não pertencem a nenhuma empresa/unidade. Vincule para que apareçam no painel.</div>
+  <div id=orphanList></div>
+</div>
 <div id=modal class=modal onclick="hideModal()"><div class=modalBox onclick="event.stopPropagation()">
 <h3 class=modalTitle id=modalTitle>Nova Empresa</h3>
 <div class=form-group><label>Nome *</label><input id=tenantName placeholder="Ex: Hospital Sao Lucas" /></div>
@@ -71,6 +76,48 @@ async function saveTenant(){
 }
 async function deleteTenant(id){if(!confirm("Excluir empresa?"))return;await fetch("/api/tenants/"+id,{method:"DELETE"});await load();}
 load();</script><script>
+var orphans=[],orphanUnits=[];
+async function loadOrphans(){
+  try{
+    var ro=await fetch("/api/computers/orphans");var jo=await ro.json();orphans=(jo&&jo.computers)||[];
+    var ru=await fetch("/api/me");var mu=await ru.json();orphanUnits=(mu&&mu.units)||[];
+  }catch(e){orphans=[];orphanUnits=[];}
+  renderOrphans();
+}
+function renderOrphans(){
+  var box=document.getElementById("orphanBox");if(!box)return;
+  if(!orphans.length){box.style.display="none";return;}
+  box.style.display="block";
+  var list=document.getElementById("orphanList");list.innerHTML="";
+  for(var i=0;i<orphans.length;i++){
+    (function(pc){
+      var row=document.createElement("div");row.style.cssText="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid #2a3238";
+      var info=document.createElement("div");
+      var nm=document.createElement("div");nm.style.cssText="font-weight:700;color:#fff;font-size:14px";nm.textContent=pc.hostname||"(sem nome)";info.appendChild(nm);
+      var meta=document.createElement("div");meta.className="muted";meta.textContent="TAG: "+(pc.tag_evo||"-")+" \u00b7 \u00faltimo reporte: "+(pc.last_seen||"-").replace("T"," ").slice(0,16);info.appendChild(meta);
+      row.appendChild(info);
+      var right=document.createElement("div");right.style.cssText="display:flex;gap:8px;align-items:center";
+      var sel=document.createElement("select");sel.style.cssText="padding:8px 10px;border-radius:10px;border:1px solid #313a41;background:#12161a;color:#e4e8ea;min-width:170px";
+      var opt0=document.createElement("option");opt0.value="";opt0.textContent="Vincular \u00e0 unidade...";sel.appendChild(opt0);
+      for(var j=0;j<orphanUnits.length;j++){var op=document.createElement("option");op.value=orphanUnits[j].unit_id;op.textContent=orphanUnits[j].name;sel.appendChild(op);}
+      right.appendChild(sel);
+      var bt=document.createElement("button");bt.className="btn btn-primary";bt.textContent="Vincular";bt.disabled=true;
+      sel.onchange=function(){bt.disabled=!sel.value;};
+      bt.onclick=async function(){
+        if(!sel.value)return;
+        bt.disabled=true;bt.textContent="Vinculando...";
+        var r=await fetch("/api/computers/"+pc.agent_id+"/unit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({unit_id:parseInt(sel.value,10)})});
+        if(!r.ok){var e=await r.json().catch(function(){return{}});alert(e.error||"Erro ao vincular");bt.disabled=false;bt.textContent="Vincular";return;}
+        await loadOrphans();
+      };
+      right.appendChild(bt);
+      row.appendChild(right);
+      list.appendChild(row);
+    })(orphans[i]);
+  }
+}
+loadOrphans();
+</script><script>
 fetch('/api/me').then(function(r){return r.json()}).then(function(m){if(m.role==='tech'){var sel=document.querySelectorAll('a[href="/usuarios"],a[href="/empresas"],a[href="/estrutura"]');for(var i=0;i<sel.length;i++){sel[i].style.display='none';}if(!m.can_manage_scripts){var sh=document.querySelector('a[href="/scripts"]');if(sh)sh.style.display='none';}}}).catch(function(){});
 </script>
 </body></html>

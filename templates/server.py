@@ -2206,6 +2206,24 @@ def api_computer_set_unit(agent_id):
     return jsonify({"ok": True})
 
 
+@app.route("/api/computers/orphans", methods=["GET"])
+@require_login
+def api_computers_orphans():
+    """PCs que reportaram inventario mas ficaram sem empresa (tenant Default sem unidade).
+    Visivel para admins (master) para resgate pela tela de Empresas."""
+    role, unit_ids = current_user_access()
+    if role != "master":
+        return jsonify({"computers": []})
+    with get_db() as conn:
+        rows = conn.execute(
+            """SELECT agent_id, hostname, tag_evo, last_seen
+               FROM computers
+               WHERE tenant_id = 1 AND unit_id IS NULL AND agent_id IS NOT NULL
+               ORDER BY last_seen DESC LIMIT 50"""
+        ).fetchall()
+    return jsonify({"computers": [dict(r) for r in rows]})
+
+
 # ================================
 # API - VINCULAR USUARIO A UNIDADE
 # ================================

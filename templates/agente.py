@@ -90,7 +90,7 @@ def ask_tag_gui():
         return None
     root = tk.Tk()
     root.withdraw()
-    tag = simpledialog.askstring("Vincular Estação", "Digite a etiqueta EVO (ex: EVO-1234):")
+    tag = simpledialog.askstring("Vincular Estação", "Digite a etiqueta do equipamento (ex: EVO-0425):\n\nUse a etiqueta real colada no computador.")
     root.destroy()
     return tag
 
