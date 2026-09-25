@@ -11,6 +11,10 @@ templates/backups/
 *.log
 .freebuff/
 
+# Originais dos screenshots (com dados reais) e OCR temporario
+assets/screenshots/_orig/
+assets/screenshots/_ocr/
+
 # Python cache
 __pycache__/
 *.pyc
