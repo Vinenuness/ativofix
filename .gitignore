@@ -14,6 +14,7 @@ templates/backups/
 # Originais dos screenshots (com dados reais) e OCR temporario
 assets/screenshots/_orig/
 assets/screenshots/_ocr/
+preview-screenshots.html
 
 # Python cache
 __pycache__/
