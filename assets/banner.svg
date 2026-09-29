@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" role="img" aria-label="AtivoFix — Gestão de TI">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0d1117"/>
+      <stop offset="1" stop-color="#161b22"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#1f6feb"/>
+      <stop offset="1" stop-color="#58c4dd"/>
+    </linearGradient>
+    <linearGradient id="mono" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1f6feb"/>
+      <stop offset="1" stop-color="#58c4dd"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="300" fill="url(#bg)"/>
+
+  <!-- rede agente → servidor (decoração) -->
+  <g opacity="0.55">
+    <line x1="790" y1="60" x2="870" y2="60" stroke="#30363d" stroke-width="1.5"/>
+    <line x1="870" y1="60" x2="950" y2="95" stroke="#30363d" stroke-width="1.5"/>
+    <line x1="870" y1="60" x2="950" y2="30" stroke="#30363d" stroke-width="1.5"/>
+    <line x1="950" y1="95" x2="1030" y2="95" stroke="#30363d" stroke-width="1.5"/>
+    <circle cx="790" cy="60" r="5" fill="#58c4dd" opacity="0.7"/>
+    <circle cx="870" cy="60" r="4" fill="#1f6feb" opacity="0.7"/>
+    <circle cx="950" cy="95" r="4" fill="#58c4dd" opacity="0.5"/>
+    <circle cx="950" cy="30" r="4" fill="#58c4dd" opacity="0.5"/>
+    <circle cx="1030" cy="95" r="6" fill="none" stroke="#1f6feb" stroke-width="1.5" opacity="0.8"/>
+  </g>
+  <circle cx="1120" cy="250" r="140" fill="#1f6feb" opacity="0.08"/>
+  <circle cx="1140" cy="40" r="80" fill="#58c4dd" opacity="0.07"/>
+
+  <!-- monograma: monitor -->
+  <circle cx="110" cy="98" r="40" fill="none" stroke="url(#mono)" stroke-width="3"/>
+  <rect x="88" y="82" width="44" height="28" rx="4" fill="none" stroke="#e6edf3" stroke-width="2.5"/>
+  <line x1="110" y1="110" x2="110" y2="118" stroke="#e6edf3" stroke-width="2.5"/>
+  <line x1="98" y1="118" x2="122" y2="118" stroke="#e6edf3" stroke-width="2.5"/>
+
+  <!-- nome -->
+  <text x="185" y="112" font-family="Segoe UI, Arial, sans-serif" font-size="56" font-weight="700" fill="#e6edf3" letter-spacing="2">ATIVOFIX</text>
+
+  <!-- barra de destaque -->
+  <rect x="60" y="150" width="240" height="5" rx="2.5" fill="url(#accent)"/>
+
+  <!-- subtítulo -->
+  <text x="60" y="212" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="600" fill="#8b949e" letter-spacing="3">GESTÃO DE TI · INVENTÁRIO AUTOMÁTICO · HELP DESK · RELATÓRIOS</text>
+
+  <!-- linha final -->
+  <text x="60" y="254" font-family="Segoe UI, Arial, sans-serif" font-size="19" fill="#8b949e">Tecnologia em Movimento · Python · Flask · Agente Windows · Em produção</text>
+</svg>

@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="templates/static/logo.png" alt="AtivoFix — Tecnologia em Movimento" width="380"/>
+<img src="assets/banner.svg" alt="AtivoFix — Gestão de TI: inventário automático, help desk e relatórios" width="100%"/>
 
 # AtivoFix
 
