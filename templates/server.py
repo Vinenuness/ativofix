@@ -645,6 +645,13 @@ def get_current_tenant():
     return session.get("tenant_id", 1)
 
 
+def is_platform_admin():
+    """Devolve True apenas para o login de administrador da PLATAFORMA
+    (sem user_id na sessao). Admins de cada EMPRESA sao 'master' mas NAO
+    sao admin da plataforma: eles somente veem/operam a propria empresa."""
+    return current_user_access()[0] == "master" and not session.get("user_id")
+
+
 def require_agent_token(f):
     """Decorator para autenticação do agente"""
     @wraps(f)
@@ -716,24 +723,41 @@ def computer_in_scope(agent_id):
     """Verifica se o usuário pode acessar um computador específico."""
     role, unit_ids = current_user_access()
     if role == "master":
-        return True
+        if is_platform_admin():
+            return True
+        # Admin de empresa: o PC deve pertencer ao mesmo tenant da sessao
+        with get_db() as conn:
+            row = conn.execute(
+                "SELECT tenant_id FROM computers WHERE agent_id = ?", (agent_id,)
+            ).fetchone()
+        if not row:
+            return False
+        return row["tenant_id"] == get_current_tenant()
     with get_db() as conn:
         row = conn.execute("SELECT unit_id FROM computers WHERE agent_id = ?", (agent_id,)).fetchone()
     if not row:
         return False
-    return row["unit_id"] in (unit_ids or [])
+    return row["unit_id"] in (unit_ids or []) and row["tenant_id"] == get_current_tenant()
 
 
 def ticket_in_scope(ticket_id):
     """Verifica se o usuário pode acessar um chamado específico."""
     role, unit_ids = current_user_access()
     if role == "master":
-        return True
+        if is_platform_admin():
+            return True
+        with get_db() as conn:
+            row = conn.execute(
+                "SELECT tenant_id, unit_id FROM tickets WHERE ticket_id = ?", (ticket_id,)
+            ).fetchone()
+        if not row:
+            return False
+        return row["tenant_id"] == get_current_tenant() and row["unit_id"] in (unit_ids or [])
     with get_db() as conn:
         row = conn.execute("SELECT unit_id FROM tickets WHERE ticket_id = ?", (ticket_id,)).fetchone()
     if not row:
         return False
-    return row["unit_id"] in (unit_ids or [])
+    return row["unit_id"] in (unit_ids or []) and row["tenant_id"] == get_current_tenant()
 
 
 SLA_HOURS = {"critical": 4, "high": 8, "medium": 24, "low": 72}
@@ -1307,6 +1331,7 @@ def dados():
 
 
 @app.route("/api/alias", methods=["POST"])
+@require_login
 def api_alias():
     data = request.get_json(silent=True) or {}
     agent_id = data.get("agent_id")
@@ -1884,7 +1909,19 @@ def api_users_list():
     role, unit_ids = current_user_access()
     tid = get_current_tenant()
     with get_db() as conn:
-        if role == "master" and not session.get("user_id"):
+        if role == "master":
+            if not is_platform_admin():
+                rows = conn.execute(
+                    "SELECT user_id, username, full_name, email, phone, cpf, notify_email, is_admin, is_unit_admin, manage_scripts, tenant_id, created_at, '' AS tenant_name FROM users WHERE tenant_id = ? ORDER BY username",
+                    (tid,),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    """SELECT u.user_id, u.username, u.full_name, u.email, u.phone, u.cpf, u.notify_email, u.is_admin, u.is_unit_admin,
+                              u.manage_scripts, u.tenant_id, u.created_at, t.name AS tenant_name
+                       FROM users u LEFT JOIN tenants t ON u.tenant_id = t.tenant_id
+                       ORDER BY t.name, u.username"""
+                ).fetchall()
             # env master (admin/admin): vê usuários de todas as empresas
             rows = conn.execute(
                 """SELECT u.user_id, u.username, u.full_name, u.email, u.phone, u.cpf, u.notify_email, u.is_admin, u.is_unit_admin,
@@ -2799,6 +2836,14 @@ def _auth_api_key():
             break
     if not match:
         return None
+    if not is_platform_admin():
+        # Só o admin da plataforma pode operar em varias empresas com chaves existentes
+        with get_db() as conn:
+            row = conn.execute(
+                "SELECT tenant_id FROM api_keys WHERE key_id = ?", (match["key_id"],)
+            ).fetchone()
+            if not row or row["tenant_id"] != get_current_tenant():
+                return None
     with get_db() as conn:
         t = conn.execute("SELECT tenant_id FROM tenants WHERE tenant_id = ?", (match["tenant_id"],)).fetchone()
         if not t:
@@ -3062,6 +3107,8 @@ def api_apikeys_list():
     role, _ = current_user_access()
     if role != "master":
         return jsonify({"error": "sem permissao"}), 403
+    if not is_platform_admin():
+        return jsonify({"error": "sem permissao"}), 403
     with get_db() as conn:
         rows = conn.execute(
             """
@@ -3079,6 +3126,8 @@ def api_apikeys_list():
 def api_apikeys_create():
     role, _ = current_user_access()
     if role != "master":
+        return jsonify({"error": "sem permissao"}), 403
+    if not is_platform_admin():
         return jsonify({"error": "sem permissao"}), 403
     data = request.get_json(silent=True) or {}
     name = (data.get("name") or "").strip()
@@ -3113,6 +3162,8 @@ def api_apikeys_delete(key_id):
     role, _ = current_user_access()
     if role != "master":
         return jsonify({"error": "sem permissao"}), 403
+    if not is_platform_admin():
+        return jsonify({"error": "sem permissao"}), 403
     with get_db() as conn:
         conn.execute("DELETE FROM api_keys WHERE key_id = ?", (key_id,))
         conn.commit()
@@ -3124,6 +3175,8 @@ def api_apikeys_delete(key_id):
 def api_apikeys_toggle(key_id):
     role, _ = current_user_access()
     if role != "master":
+        return jsonify({"error": "sem permissao"}), 403
+    if not is_platform_admin():
         return jsonify({"error": "sem permissao"}), 403
     with get_db() as conn:
         row = conn.execute("SELECT active FROM api_keys WHERE key_id = ?", (key_id,)).fetchone()
