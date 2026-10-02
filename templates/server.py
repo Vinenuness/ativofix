@@ -1249,9 +1249,20 @@ def pc_delete(agent_id):
         if not row:
             return jsonify({"error": "not found"}), 404
         device_uid = row["device_uid"]
-        conn.execute("DELETE FROM jobs WHERE device_uid = ?", (device_uid,))
-        conn.execute("DELETE FROM computers WHERE agent_id = ?", (agent_id,))
-        conn.commit()
+        try:
+            # Remove dependencias antes do PC (FKs sem ON DELETE CASCADE)
+            conn.execute("DELETE FROM metrics_history WHERE agent_id = ?", (agent_id,))
+            conn.execute("DELETE FROM alerts WHERE agent_id = ?", (agent_id,))
+            conn.execute("DELETE FROM maintenance_alerts WHERE agent_id = ?", (agent_id,))
+            conn.execute("DELETE FROM computer_changes WHERE agent_id = ?", (agent_id,))
+            # Preserva os chamados: apenas desvincula do PC
+            conn.execute("UPDATE tickets SET agent_id = NULL WHERE agent_id = ?", (agent_id,))
+            conn.execute("DELETE FROM jobs WHERE device_uid = ?", (device_uid,))
+            conn.execute("DELETE FROM computers WHERE agent_id = ?", (agent_id,))
+            conn.commit()
+        except sqlite3.IntegrityError as e:
+            logger.warning(f"Falha ao excluir computador {agent_id}: {e}")
+            return jsonify({"error": "Nao foi possivel excluir: ha registros vinculados a este PC"}), 409
     logger.info(f"Computador excluído: {agent_id}")
     return jsonify({"ok": True})
 
@@ -4015,14 +4026,18 @@ def api_ticket_track():
     email = (data.get("email") or "").strip().lower()
     if not email:
         return jsonify({"error": "Email obrigatorio"}), 400
+    if not is_valid_email(email):
+        return jsonify({"error": "E-mail inválido"}), 400
+    # Casamento EXATO do e-mail (formato "Nome (email)"), nunca LIKE '%...%'
+    _ep = email.replace("!", "!!").replace("%", "!%").replace("_", "!_")
     with get_db() as conn:
         rows = conn.execute("""
             SELECT ticket_id, title, description, priority, status, rating, rating_comment,
                    created_by, created_at, resolved_at, closed_at, resolution_notes, sla_due
             FROM tickets 
-            WHERE (created_by LIKE ? OR created_by LIKE ?)
+            WHERE (lower(created_by) = ? OR lower(created_by) LIKE ? ESCAPE '!')
             ORDER BY created_at DESC
-        """, ('%' + email + '%', '%' + email.split('@')[0] + '%')).fetchall()
+        """, (email, '%(' + _ep + ')')).fetchall()
     tickets = []
     for r in rows:
         tickets.append({
@@ -4040,9 +4055,9 @@ def api_ticket_track():
             atts = conn.execute(
                 "SELECT id, filename, size FROM ticket_attachments WHERE ticket_id = ? ORDER BY id",
                 (t["ticket_id"],)).fetchall()
+            # Nao expor URL pre-assinada ao publico (evita download cross-tenant)
             t["attachments"] = [{
-                "id": a["id"], "filename": a["filename"], "size": a["size"],
-                "url": "/api/attachments/track/%d/%d?k=%s" % (t["ticket_id"], a["id"], _track_att_key(t["ticket_id"], a["id"]))
+                "id": a["id"], "filename": a["filename"], "size": a["size"]
             } for a in atts]
     return jsonify({"tickets": tickets, "email": email})
 
