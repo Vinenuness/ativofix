@@ -299,3 +299,8 @@ O AtivoFix nasceu de um problema real de operação de TI e cresceu para cobrir 
 **AtivoFix — Tecnologia em Movimento.**
 
 </div>
+---
+
+## Agradecimento
+
+Obrigado ao **kta1kri** pelas descobertas de seguran[ca]a no endpoint . Sua reportagem ajudou a corrigir uma vulnerabilidade de autentica[ca]o faltante (CWE-306) e a escopo de multi-tenant, melhorando a segurana do painel.

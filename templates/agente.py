@@ -37,7 +37,7 @@ BIND_URL = f"{SERVER_BASE_URL}/api/agent/bind"
 JOBS_URL = f"{SERVER_BASE_URL}/api/agent/jobs"
 JOB_RESULT_URL = f"{SERVER_BASE_URL}/api/agent/jobs/{{job_id}}/result"
 
-AGENT_TOKEN = os.environ.get("AGENT_TOKEN", "451f686c709a28cccf5584d81f21126d50e8d79f2253840e")
+AGENT_TOKEN = os.environ.get("AGENT_TOKEN")
 INTERVALO_SEG = int(os.environ.get("AGENT_INTERVALO_SEG", "60"))
 
 BASE_DIR = os.path.join(os.environ.get("ProgramData", r"C:\ProgramData"), "AgenteTI")

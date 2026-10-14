@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 
 # >>> CONFIGURACAO DE PRODUCAO <<<
 $SERVER_URL = "http://147.93.181.158"   # troque para https://ativofix.com.br quando o DNS ativar
-$AGENT_TOKEN = "451f686c709a28cccf5584d81f21126d50e8d79f2253840e"
+$AGENT_TOKEN = $env:AGENT_TOKEN // use environment variable instead of hardcoded token
 # ==================================
 
 Write-Host "=============================================" -ForegroundColor Cyan
@@ -67,7 +67,7 @@ Write-Host "=============================================" -ForegroundColor Gree
 Write-Host " Instalacao concluida!" -ForegroundColor Green
 Write-Host "=============================================" -ForegroundColor Green
 Write-Host " Servidor : $SERVER_URL"
-Write-Host " Token    : $($AGENT_TOKEN.Substring(0,8))..."
+if ($env:AGENT_TOKEN) { Write-Host " Token    : $( $env:AGENT_TOKEN.Substring(0,8) )... (oculto para seguran" + "ca)" } else { Write-Host " Token    : (nao configurado)" }
 Write-Host ""
 Write-Host " O agente inicia automaticamente no proximo login."
 Write-Host " Na primeira janela ele pode pedir a TAG do PC."
